@@ -23,10 +23,15 @@ type Payment = {
   amount: number
 }
 
-export function App() {
+export default function HomePage() {
   const data = useMemo<Payment[]>(
     () => [
-      { id: "728ed52f", email: "m@example.com", status: "pending", amount: 100 },
+      {
+        id: "728ed52f",
+        email: "m@example.com",
+        status: "pending",
+        amount: 100,
+      },
       {
         id: "489e1d42",
         email: "example@gmail.com",
@@ -101,7 +106,7 @@ export function App() {
     <div className="mx-auto flex min-h-svh w-full max-w-4xl flex-col gap-4 p-6">
       <div>
         <h1 className="text-xl font-semibold">Recent payments</h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           TanStack Table running with shared UI table primitives.
         </p>
       </div>
@@ -130,14 +135,20 @@ export function App() {
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No results.
                 </TableCell>
               </TableRow>
@@ -146,7 +157,7 @@ export function App() {
         </Table>
       </div>
 
-      <div className="text-muted-foreground font-mono text-xs">
+      <div className="font-mono text-xs text-muted-foreground">
         (Press <kbd>d</kbd> to toggle dark mode)
       </div>
     </div>
