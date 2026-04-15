@@ -17,9 +17,16 @@ import { DebtorCardList } from "@/components/debtor-card-list"
 import { DebtorTable } from "@/components/debtor-table"
 import { EmptyState } from "@/components/empty-state"
 import { ExportButton } from "@/components/export-button"
-import { useDebtors } from "@/context/debtors-context"
-import type { CaseStatus, Debtor } from "@/data/mock"
-import { CASE_STATUS_LABELS } from "@/data/mock"
+import { useOrg } from "@/context/org-context"
+import type { ApiDebtor } from "@/lib/api"
+import { useSession } from "@/lib/auth-client"
+import { parseDebtAmountString } from "@/lib/debtor-traces"
+import {
+  useDebtorsList,
+  useSetDebtorStatus,
+} from "@/hooks/use-debtors-queries"
+import type { CaseStatus } from "@/types/debtor"
+import { CASE_STATUS_LABELS } from "@/types/debtor"
 import { useMinLg } from "@/hooks/use-media"
 import { Search, Upload } from "lucide-react"
 
@@ -29,11 +36,20 @@ const COUNTRIES = ["all", "ES", "PT", "IT", "GR"] as const
 const ENRICH = ["all", "pending", "complete", "failed"] as const
 type SortKey = "debtAmount" | "caseStatus" | "none"
 
-function sortRows(rows: Debtor[], key: SortKey, dir: "asc" | "desc"): Debtor[] {
+function sortRows(
+  rows: ApiDebtor[],
+  key: SortKey,
+  dir: "asc" | "desc"
+): ApiDebtor[] {
   if (key === "none") return rows
   const mul = dir === "asc" ? 1 : -1
   return [...rows].sort((a, b) => {
-    if (key === "debtAmount") return (a.debtAmount - b.debtAmount) * mul
+    if (key === "debtAmount")
+      return (
+        (parseDebtAmountString(a.debtAmount) -
+          parseDebtAmountString(b.debtAmount)) *
+        mul
+      )
     return a.caseStatus.localeCompare(b.caseStatus) * mul
   })
 }
@@ -70,7 +86,16 @@ function FilterSelect({
 }
 
 export default function DebtorsPage() {
-  const { debtors, setCaseStatus } = useDebtors()
+  const { orgId, isLoading: orgLoading, orgs } = useOrg()
+  const { data: session } = useSession()
+  const author = session?.user?.name ?? "Collector"
+  const {
+    data: debtors = [],
+    isLoading: debtorsLoading,
+    isError,
+    error,
+  } = useDebtorsList(orgId ?? "")
+  const setStatusMutation = useSetDebtorStatus()
   const navigate = useNavigate()
   const lg = useMinLg()
 
@@ -89,7 +114,7 @@ export default function DebtorsPage() {
     return debtors.filter((d) => {
       const matchQ =
         !q.trim() ||
-        d.name.toLowerCase().includes(q.toLowerCase()) ||
+        d.debtorName.toLowerCase().includes(q.toLowerCase()) ||
         d.caseRef.toLowerCase().includes(q.toLowerCase())
       const matchS = status === "all" || d.caseStatus === status
       const matchC = country === "all" || d.country === country
@@ -110,12 +135,12 @@ export default function DebtorsPage() {
     () =>
       sorted
         .slice(safePage * PAGE, safePage * PAGE + PAGE)
-        .map((d) => d.debtorId),
+        .map((d) => d.id),
     [sorted, safePage]
   )
 
   const selectedDebtors = React.useMemo(
-    () => debtors.filter((d) => selectedIds.has(d.debtorId)),
+    () => debtors.filter((d) => selectedIds.has(d.id)),
     [debtors, selectedIds]
   )
 
@@ -157,13 +182,19 @@ export default function DebtorsPage() {
   )
 
   const applyBulkStatus = React.useCallback(
-    (st: CaseStatus) => {
-      selectedIds.forEach((debtorId) => {
-        setCaseStatus(debtorId, st, "Bulk update")
-      })
+    async (st: CaseStatus) => {
+      const ids = [...selectedIds]
+      for (const id of ids) {
+        await setStatusMutation.mutateAsync({
+          id,
+          status: st,
+          note: "Bulk update",
+          author,
+        })
+      }
       setSelectedIds(new Set())
     },
-    [selectedIds, setCaseStatus]
+    [selectedIds, setStatusMutation, author]
   )
 
   const selectionProps = React.useMemo(
@@ -180,6 +211,43 @@ export default function DebtorsPage() {
 
   const hasActiveFilters =
     q.trim() !== "" || status !== "all" || country !== "all" || enrich !== "all"
+
+  if (orgLoading) {
+    return (
+      <p className="text-sm text-muted-foreground">Loading organization…</p>
+    )
+  }
+
+  if (!orgId && orgs.length === 0) {
+    return (
+      <div className="vexor-fade-up">
+        <EmptyState
+          icon={Upload}
+          title="No organization"
+          description="Create an organization in the API or database first, then refresh. Debtors are scoped per organization."
+          actionLabel="Open API docs"
+          onAction={() =>
+            window.open(
+              `${import.meta.env.VITE_API_URL ?? "http://localhost:3000"}/api/docs`,
+              "_blank"
+            )
+          }
+        />
+      </div>
+    )
+  }
+
+  if (debtorsLoading) {
+    return <p className="text-sm text-muted-foreground">Loading debtors…</p>
+  }
+
+  if (isError) {
+    return (
+      <p className="text-sm text-destructive">
+        {(error as Error)?.message ?? "Failed to load debtors."}
+      </p>
+    )
+  }
 
   if (debtors.length === 0) {
     return (

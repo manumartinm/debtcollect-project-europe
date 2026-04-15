@@ -1,4 +1,5 @@
 import type { Context } from 'hono'
+import { auth } from '../lib/auth.js'
 import { OrganizationModel, MemberModel } from '../models/org.model.js'
 
 function paramOrgId(c: Context): string {
@@ -12,6 +13,16 @@ function paramMemberId(c: Context): string {
 export class OrganizationController {
   static async list(c: Context) {
     const rows = await OrganizationModel.findAll()
+    return c.json(rows)
+  }
+
+  /** GET /mine — organizations the signed-in user belongs to. */
+  static async listMine(c: Context) {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers })
+    if (!session?.user?.id) {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
+    const rows = await OrganizationModel.findByUserId(session.user.id)
     return c.json(rows)
   }
 

@@ -2,14 +2,19 @@ import { Download } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@workspace/ui/components/button"
-import type { Debtor } from "@/data/mock"
+import type { ApiDebtor } from "@/lib/api"
+import {
+  enrichedFieldValue,
+  flattenTraceSteps,
+  parseDebtAmountString,
+} from "@/lib/debtor-traces"
 
 function escapeCell(v: string) {
   if (/[",\n]/.test(v)) return `"${v.replace(/"/g, '""')}"`
   return v
 }
 
-function buildCsv(debtors: Debtor[]) {
+function buildCsv(debtors: ApiDebtor[]) {
   const enriched = debtors.filter((d) => d.enrichmentStatus === "complete")
   const headers = [
     "case_ref",
@@ -28,22 +33,22 @@ function buildCsv(debtors: Debtor[]) {
   ]
   const lines = [headers.join(",")]
   for (const d of enriched) {
-    const urls = d.traces
+    const urls = flattenTraceSteps(d)
       .flatMap((t) => t.sources.map((s) => s.url))
       .join(" | ")
     const row = [
       d.caseRef,
       d.country,
-      String(d.debtAmount),
+      String(parseDebtAmountString(d.debtAmount)),
       d.callOutcome,
       d.legalOutcome,
-      d.name,
+      d.debtorName,
       d.leverageScore,
-      d.enriched?.phone ?? "",
-      d.enriched?.address ?? "",
-      d.enriched?.employer ?? "",
-      d.enriched?.assets ?? "",
-      d.enriched?.socialMediaHints ?? "",
+      enrichedFieldValue(d, "phone") ?? "",
+      enrichedFieldValue(d, "address") ?? "",
+      enrichedFieldValue(d, "employer") ?? "",
+      enrichedFieldValue(d, "assets") ?? "",
+      enrichedFieldValue(d, "social_media_hints") ?? "",
       urls,
     ].map((x) => escapeCell(String(x)))
     lines.push(row.join(","))
@@ -51,7 +56,7 @@ function buildCsv(debtors: Debtor[]) {
   return lines.join("\n")
 }
 
-export function ExportButton({ debtors }: { debtors: Debtor[] }) {
+export function ExportButton({ debtors }: { debtors: ApiDebtor[] }) {
   const count = debtors.filter((d) => d.enrichmentStatus === "complete").length
 
   const handleExport = () => {

@@ -1,9 +1,9 @@
 import { cn } from "@workspace/ui/lib/utils"
 
-import type { AiTraceStep } from "@/data/mock"
+import type { ApiTraceStep } from "@/lib/api"
 
 /** Full detail for one trace step — used in the right Sheet and elsewhere. */
-export function TraceStepDetail({ step }: { step: AiTraceStep }) {
+export function TraceStepDetail({ step }: { step: ApiTraceStep }) {
   return (
     <div className="space-y-4 text-[13px] leading-relaxed">
       <div className="flex flex-wrap items-center gap-2">
@@ -21,7 +21,7 @@ export function TraceStepDetail({ step }: { step: AiTraceStep }) {
           </p>
           <ul className="mt-1 space-y-0.5">
             {step.sources.map((s) => (
-              <li key={s.url}>
+              <li key={s.id}>
                 <a
                   href={s.url}
                   target="_blank"

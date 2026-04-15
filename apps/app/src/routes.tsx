@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router"
+import { Navigate, Route, Routes } from "react-router"
 
 import { AnimatedOutlet } from "@/components/animated-outlet"
 import { AppLayout } from "@/components/app-layout"
@@ -7,6 +7,7 @@ import DebtorProfilePage from "@/routes/(authorized)/debtor-profile/page"
 import DebtorsPage from "@/routes/(authorized)/debtors/page"
 import SettingsPage from "@/routes/(authorized)/settings/page"
 import UploadPage from "@/routes/(authorized)/upload/page"
+import OnboardingPage from "@/routes/(authorized)/onboarding/page"
 import RootLayout from "@/routes/layout"
 import AuthorizedLayout from "@/routes/(authorized)/layout"
 import UnauthorizedLayout from "@/routes/(unauthorized)/layout"
@@ -18,6 +19,9 @@ export function AppRoutes() {
     <Routes>
       <Route element={<RootLayout />}>
         <Route element={<AuthorizedLayout />}>
+          {/* Full-screen onboarding (no app chrome) — same auth + OrgProvider as the rest */}
+          <Route path="onboarding" element={<OnboardingPage />} />
+
           <Route element={<AppLayout />}>
             <Route element={<AnimatedOutlet />}>
               <Route index element={<DashboardPage />} />
@@ -33,6 +37,8 @@ export function AppRoutes() {
           <Route path="signin" element={<SignInPage />} />
           <Route path="signup" element={<SignUpPage />} />
         </Route>
+
+        <Route path="*" element={<Navigate to="/signup" replace />} />
       </Route>
     </Routes>
   )

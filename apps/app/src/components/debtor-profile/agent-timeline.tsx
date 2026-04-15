@@ -2,23 +2,23 @@ import { Button } from "@workspace/ui/components/button"
 import { ScrollArea } from "@workspace/ui/components/scroll-area"
 import { cn } from "@workspace/ui/lib/utils"
 
-import type { AiTraceStep } from "@/data/mock"
+import type { ApiTraceStep } from "@/lib/api"
 
 export function AgentTimeline({
   steps,
   emptyMessage,
   onOpenStep,
 }: {
-  steps: AiTraceStep[]
+  steps: ApiTraceStep[]
   emptyMessage?: string
   /** Opens the trace detail panel on the right (Sheet) instead of inline expand. */
-  onOpenStep?: (step: AiTraceStep) => void
+  onOpenStep?: (step: ApiTraceStep) => void
 }) {
   if (steps.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-10 text-center text-sm text-muted-foreground">
         {emptyMessage ??
-          "No enrichment data yet — run enrichment to see agent reasoning and sources."}
+          "No enrichment data yet — traces appear when the pipeline writes enriched fields."}
       </div>
     )
   }

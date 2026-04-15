@@ -1,5 +1,7 @@
-import type { Debtor } from "@/data/mock"
-import { leverageExplanation } from "@/data/mock"
+import type { ApiDebtor } from "@/lib/api"
+import { enrichedFieldValue, parseDebtAmountString } from "@/lib/debtor-traces"
+import { leverageExplanation } from "@/lib/leverage"
+import type { LeverageLevel } from "@/types/debtor"
 
 export type InsightBlock = { title: string; points: string[] }
 
@@ -14,13 +16,15 @@ function formatMoney(n: number) {
 /**
  * Structured talking points for the debt manager on outbound calls — derived from case + enrichment.
  */
-export function buildCallInsightBlocks(debtor: Debtor): InsightBlock[] {
+export function buildCallInsightBlocks(debtor: ApiDebtor): InsightBlock[] {
   const blocks: InsightBlock[] = []
+  const debt = parseDebtAmountString(debtor.debtAmount)
+  const lev = debtor.leverageScore as LeverageLevel
 
   blocks.push({
     title: "Account snapshot",
     points: [
-      `Outstanding balance ${formatMoney(debtor.debtAmount)} · jurisdiction ${debtor.country}.`,
+      `Outstanding balance ${formatMoney(debt)} · jurisdiction ${debtor.country}.`,
       `Case ref ${debtor.caseRef} — use when debtor asks for reference.`,
       `Portfolio call outcome (CSV): ${debtor.callOutcome}.`,
       `Legal / asset line (CSV): ${debtor.legalOutcome}.`,
@@ -29,32 +33,43 @@ export function buildCallInsightBlocks(debtor: Debtor): InsightBlock[] {
 
   blocks.push({
     title: "Leverage & tone",
-    points: [
-      leverageExplanation(debtor.leverageScore),
-      postureLine(debtor.leverageScore),
-    ],
+    points: [leverageExplanation(lev), postureLine(lev)],
   })
 
-  if (debtor.enrichmentStatus === "complete" && debtor.enriched) {
-    const e = debtor.enriched
+  if (debtor.enrichmentStatus === "complete" && debtor.enrichedFields.length > 0) {
+    const phone = enrichedFieldValue(debtor, "phone")
+    const employer = enrichedFieldValue(debtor, "employer")
+    const address = enrichedFieldValue(debtor, "address")
+    const assets = enrichedFieldValue(debtor, "assets")
+    const social = enrichedFieldValue(debtor, "social_media_hints")
+    const income = enrichedFieldValue(debtor, "income_bracket")
+
     const signalPoints: string[] = []
-    if (e.phone && e.phone !== "Not found") {
-      signalPoints.push(`Phone on file (enrichment): ${e.phone} — verify live before quoting.`)
+    if (phone && phone !== "Not found") {
+      signalPoints.push(
+        `Phone on file (enrichment): ${phone} — verify live before quoting.`
+      )
     }
-    if (e.employer && e.employer !== "Not found") {
-      signalPoints.push(`Employer signal: ${e.employer} — optional angle for schedule/plan discussion if verified.`)
+    if (employer && employer !== "Not found") {
+      signalPoints.push(
+        `Employer signal: ${employer} — optional angle for schedule/plan discussion if verified.`
+      )
     }
-    if (e.address && e.address !== "Unknown" && e.address !== "Not found") {
-      signalPoints.push(`Location context: ${e.address}.`)
+    if (address && address !== "Unknown" && address !== "Not found") {
+      signalPoints.push(`Location context: ${address}.`)
     }
-    if (e.assets && e.assets !== "Not found" && e.assets !== "None in public sweep") {
-      signalPoints.push(`Public asset hint: ${e.assets} — use only if consistent with policy.`)
+    if (assets && assets !== "Not found" && assets !== "None in public sweep") {
+      signalPoints.push(
+        `Public asset hint: ${assets} — use only if consistent with policy.`
+      )
     }
-    if (e.socialMediaHints && e.socialMediaHints !== "Not found") {
-      signalPoints.push(`Open-web signal: ${e.socialMediaHints} — low weight; never accusatory.`)
+    if (social && social !== "Not found") {
+      signalPoints.push(
+        `Open-web signal: ${social} — low weight; never accusatory.`
+      )
     }
-    if (e.incomeBracket && e.incomeBracket !== "Unknown") {
-      signalPoints.push(`Income bracket (estimate): ${e.incomeBracket}.`)
+    if (income && income !== "Unknown") {
+      signalPoints.push(`Income bracket (estimate): ${income}.`)
     }
     if (signalPoints.length > 0) {
       blocks.push({
@@ -66,7 +81,7 @@ export function buildCallInsightBlocks(debtor: Debtor): InsightBlock[] {
     blocks.push({
       title: "Enrichment",
       points: [
-        "Enrichment not run yet — run AI enrichment before leaning on public-signal angles in the call.",
+        "Enrichment not completed yet — pipeline may still process this case.",
       ],
     })
   }
@@ -84,7 +99,7 @@ export function buildCallInsightBlocks(debtor: Debtor): InsightBlock[] {
   return blocks
 }
 
-function postureLine(score: Debtor["leverageScore"]): string {
+function postureLine(score: LeverageLevel): string {
   switch (score) {
     case "high":
       return "Posture: prepared and specific — cite only verified facts; document the conversation."

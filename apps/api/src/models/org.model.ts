@@ -7,6 +7,16 @@ export class OrganizationModel {
     return db.select().from(organizations)
   }
 
+  /** Organizations the user belongs to (via members). */
+  static async findByUserId(userId: string) {
+    const rows = await db
+      .select({ org: organizations })
+      .from(members)
+      .innerJoin(organizations, eq(organizations.id, members.orgId))
+      .where(eq(members.userId, userId))
+    return rows.map((r) => r.org)
+  }
+
   static async findById(id: string) {
     const [row] = await db.select().from(organizations).where(eq(organizations.id, id)).limit(1)
     return row ?? null

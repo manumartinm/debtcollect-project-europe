@@ -8,8 +8,8 @@ import { orgsApi, type ApiOrganization, type ApiMember } from "@/lib/api"
 
 export function useOrgsList() {
   return useQuery({
-    queryKey: queryKeys.orgs.list(),
-    queryFn: orgsApi.list,
+    queryKey: queryKeys.orgs.mine(),
+    queryFn: orgsApi.mine,
   })
 }
 
@@ -39,6 +39,7 @@ export function useCreateOrg() {
     mutationFn: orgsApi.create,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.orgs.all })
+      qc.invalidateQueries({ queryKey: queryKeys.orgs.mine() })
     },
   })
 }
@@ -56,6 +57,7 @@ export function useUpdateOrg() {
     onSuccess: (_data: ApiOrganization, { id }) => {
       qc.invalidateQueries({ queryKey: queryKeys.orgs.detail(id) })
       qc.invalidateQueries({ queryKey: queryKeys.orgs.all })
+      qc.invalidateQueries({ queryKey: queryKeys.orgs.mine() })
     },
   })
 }
@@ -73,6 +75,7 @@ export function useAddMember() {
     }) => orgsApi.members.add(orgId, data),
     onSuccess: (_data: ApiMember, { orgId }) => {
       qc.invalidateQueries({ queryKey: queryKeys.orgs.members(orgId) })
+      qc.invalidateQueries({ queryKey: queryKeys.orgs.mine() })
     },
   })
 }

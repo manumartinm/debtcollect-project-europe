@@ -1,6 +1,6 @@
 import { LeverageBadge } from "@/components/leverage-badge"
-import type { LeverageLevel } from "@/data/mock"
-import { leverageExplanation } from "@/data/mock"
+import { leverageExplanation } from "@/lib/leverage"
+import type { LeverageLevel } from "@/types/debtor"
 
 export function LeverageIndicator({ score }: { score: LeverageLevel }) {
   return (

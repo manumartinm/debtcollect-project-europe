@@ -1,4 +1,5 @@
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000"
+/** Backend origin (REST + Better Auth). Default matches `apps/api` dev server. */
+export const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000"
 
 type RequestOptions = {
   headers?: HeadersInit
@@ -165,6 +166,9 @@ export const debtorsApi = {
       debtAmount: number
       callOutcome?: string
       legalOutcome?: string
+      enriched?: Partial<
+        Record<"phone" | "address" | "email" | "tax_id", string>
+      >
     }>
   }) {
     return api.post<{ imported: number }>("/api/debtors/bulk", { body: data })
@@ -240,6 +244,11 @@ export const debtorsApi = {
 export const orgsApi = {
   list() {
     return api.get<ApiOrganization[]>("/api/orgs")
+  },
+
+  /** Organizations the current user belongs to (requires session). */
+  mine() {
+    return api.get<ApiOrganization[]>("/api/orgs/mine")
   },
 
   get(id: string) {

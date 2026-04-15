@@ -14,25 +14,28 @@ import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { cn } from "@workspace/ui/lib/utils"
 
-import type { CaseStatus, Debtor } from "@/data/mock"
-import { CASE_STATUS_LABELS } from "@/data/mock"
+import type { ApiDebtor } from "@/lib/api"
+import type { CaseStatus } from "@/types/debtor"
+import { CASE_STATUS_LABELS } from "@/types/debtor"
 
 export function StatusTimeline({
   debtor,
   onStatusChange,
 }: {
-  debtor: Debtor
+  debtor: ApiDebtor
   onStatusChange: (status: CaseStatus, note: string) => void
 }) {
-  const [status, setStatus] = React.useState<CaseStatus>(debtor.caseStatus)
+  const [status, setStatus] = React.useState<CaseStatus>(
+    debtor.caseStatus as CaseStatus
+  )
   const [note, setNote] = React.useState("")
 
   React.useEffect(() => {
-    setStatus(debtor.caseStatus)
+    setStatus(debtor.caseStatus as CaseStatus)
   }, [debtor.caseStatus])
 
-  const ordered = [...debtor.statusHistory].sort((a, b) =>
-    b.timestamp.localeCompare(a.timestamp)
+  const ordered = [...debtor.statusEvents].sort((a, b) =>
+    b.occurredAt.localeCompare(a.occurredAt)
   )
 
   return (
@@ -96,7 +99,7 @@ export function StatusTimeline({
                 disabled={!note.trim() && status === debtor.caseStatus}
                 onClick={() => {
                   setNote("")
-                  setStatus(debtor.caseStatus)
+                  setStatus(debtor.caseStatus as CaseStatus)
                 }}
               >
                 Clear
@@ -131,7 +134,7 @@ export function StatusTimeline({
                       variant="outline"
                       className="font-normal text-[12px] leading-none"
                     >
-                      {CASE_STATUS_LABELS[e.status]}
+                      {CASE_STATUS_LABELS[e.status as CaseStatus] ?? e.status}
                     </Badge>
                     {e.note ? (
                       <p className="mt-2.5 wrap-break-word text-[14px] leading-relaxed text-foreground">
@@ -140,8 +143,8 @@ export function StatusTimeline({
                     ) : null}
                   </div>
                   <div className="shrink-0 text-[11px] leading-tight text-muted-foreground sm:text-right">
-                    <time dateTime={e.timestamp} className="block sm:whitespace-nowrap">
-                      {new Date(e.timestamp).toLocaleString(undefined, {
+                    <time dateTime={e.occurredAt} className="block sm:whitespace-nowrap">
+                      {new Date(e.occurredAt).toLocaleString(undefined, {
                         dateStyle: "medium",
                         timeStyle: "short",
                       })}

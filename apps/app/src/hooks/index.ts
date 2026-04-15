@@ -1,4 +1,10 @@
-export { useAuthSession, useSignIn, useSignUp, useSignOut } from "./use-auth"
+export {
+  hasValidSession,
+  useAuthSession,
+  useSignIn,
+  useSignUp,
+  useSignOut,
+} from "./use-auth"
 
 export {
   useDebtorsList,
@@ -24,6 +30,5 @@ export {
   useRemoveMember,
 } from "./use-orgs-queries"
 
-export { useEnrichmentRun } from "./use-enrichment-sim"
 export { useMinLg } from "./use-media"
 export { useEscapeBack } from "./use-keyboard-shortcuts"

@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card"
 
-import type { Debtor } from "@/data/mock"
+import type { ApiDebtor } from "@/lib/api"
+import { parseDebtAmountString } from "@/lib/debtor-traces"
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en-EU", {
@@ -10,7 +11,7 @@ function formatMoney(n: number) {
   }).format(n)
 }
 
-export function FixedFields({ debtor }: { debtor: Debtor }) {
+export function FixedFields({ debtor }: { debtor: ApiDebtor }) {
   return (
     <Card className="border-border bg-card shadow-none">
       <CardHeader className="pb-3">
@@ -28,19 +29,19 @@ export function FixedFields({ debtor }: { debtor: Debtor }) {
         <div>
           <p className="text-xs text-muted-foreground">Debt amount</p>
           <p className="text-sm font-semibold tabular-nums">
-            {formatMoney(debtor.debtAmount)}
+            {formatMoney(parseDebtAmountString(debtor.debtAmount))}
           </p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Name (portfolio)</p>
-          <p className="text-sm font-medium">{debtor.name}</p>
+          <p className="text-sm font-medium">{debtor.debtorName}</p>
         </div>
         <div className="sm:col-span-2">
           <p className="text-xs text-muted-foreground">Call outcome (CSV)</p>
           <p className="text-sm text-foreground">{debtor.callOutcome}</p>
         </div>
         <div className="sm:col-span-2">
-          <p className="text-xs text-muted-foreground">Legal / asset report (CSV)</p>
+          <p className="text-xs text-muted-foreground">Legal outcome (CSV)</p>
           <p className="text-sm text-foreground">{debtor.legalOutcome}</p>
         </div>
       </CardContent>

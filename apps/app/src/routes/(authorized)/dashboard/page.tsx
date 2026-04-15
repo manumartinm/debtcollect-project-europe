@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Link, useNavigate } from "react-router"
+import { Link, Navigate, useNavigate } from "react-router"
 import { ArrowRight, Sparkles, Upload } from "lucide-react"
 
 import { buttonVariants } from "@workspace/ui/components/button"
@@ -14,9 +14,11 @@ import { cn } from "@workspace/ui/lib/utils"
 
 import { EmptyState } from "@/components/empty-state"
 import { StatsCards } from "@/components/stats-cards"
-import { useDebtors } from "@/context/debtors-context"
-import type { LeverageLevel } from "@/data/mock"
-import { CASE_STATUS_LABELS } from "@/data/mock"
+import { useOrg } from "@/context/org-context"
+import { useDebtorsList } from "@/hooks/use-debtors-queries"
+import { parseDebtAmountString } from "@/lib/debtor-traces"
+import type { CaseStatus, LeverageLevel } from "@/types/debtor"
+import { CASE_STATUS_LABELS } from "@/types/debtor"
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en-EU", {
@@ -27,8 +29,25 @@ function formatMoney(n: number) {
 }
 
 export default function DashboardPage() {
-  const { debtors } = useDebtors()
   const navigate = useNavigate()
+  const { orgId, orgs, isLoading: orgLoading } = useOrg()
+  const { data: debtors = [], isLoading, isError } = useDebtorsList(orgId ?? "")
+
+  if (!orgLoading && orgs.length === 0) {
+    return <Navigate to="/onboarding" replace />
+  }
+
+  if (orgLoading || isLoading) {
+    return (
+      <p className="text-sm text-muted-foreground">Loading dashboard…</p>
+    )
+  }
+
+  if (isError) {
+    return (
+      <p className="text-sm text-destructive">Could not load portfolio data.</p>
+    )
+  }
 
   if (debtors.length === 0) {
     return (
@@ -47,7 +66,10 @@ export default function DashboardPage() {
     )
   }
 
-  const totalDebt = debtors.reduce((a, d) => a + d.debtAmount, 0)
+  const totalDebt = debtors.reduce(
+    (a, d) => a + parseDebtAmountString(d.debtAmount),
+    0
+  )
   const inProgress = debtors.filter((d) =>
     ["new", "reviewing", "called", "negotiating"].includes(d.caseStatus)
   ).length
@@ -58,17 +80,19 @@ export default function DashboardPage() {
     medium: 0,
     high: 0,
   }
-  for (const d of debtors) lev[d.leverageScore] += 1
+  for (const d of debtors) {
+    lev[d.leverageScore as LeverageLevel] += 1
+  }
 
   const recent = debtors
     .flatMap((d) =>
-      d.statusHistory.map((e) => ({
+      (d.statusEvents ?? []).map((e) => ({
         ...e,
-        debtorId: d.debtorId,
-        name: d.name,
+        debtorId: d.id,
+        name: d.debtorName,
       }))
     )
-    .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+    .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
     .slice(0, 8)
 
   return (
@@ -102,9 +126,9 @@ export default function DashboardPage() {
             value: formatMoney(totalDebt),
           },
           {
-            label: "Recovery rate (mock)",
-            value: "12.4%",
-            hint: "Illustrative — not a scoring model",
+            label: "Recovery rate",
+            value: "—",
+            hint: "Connect analytics to populate",
           },
           { label: "In progress", value: String(inProgress) },
         ]}
@@ -166,9 +190,7 @@ export default function DashboardPage() {
                   <div key={status} className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">
-                        {CASE_STATUS_LABELS[
-                          status as keyof typeof CASE_STATUS_LABELS
-                        ] ?? status}
+                        {CASE_STATUS_LABELS[status as CaseStatus] ?? status}
                       </span>
                       <span className="font-medium">{n}</span>
                     </div>
@@ -206,28 +228,32 @@ export default function DashboardPage() {
           </Link>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-3">
-            {recent.map((e) => (
-              <li key={e.id} className="flex gap-3 text-sm">
-                <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
-                <div className="min-w-0 flex-1">
-                  <p>
-                    <Link
-                      to={`/debtors/${encodeURIComponent(e.debtorId)}`}
-                      className="font-medium text-foreground hover:underline"
-                    >
-                      {e.name}
-                    </Link>{" "}
-                    <span className="text-muted-foreground">—</span>{" "}
-                    {CASE_STATUS_LABELS[e.status]}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(e.timestamp).toLocaleString()} · {e.author}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {recent.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No status events yet.</p>
+          ) : (
+            <ul className="space-y-3">
+              {recent.map((e) => (
+                <li key={e.id} className="flex gap-3 text-sm">
+                  <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <p>
+                      <Link
+                        to={`/debtors/${encodeURIComponent(e.debtorId)}`}
+                        className="font-medium text-foreground hover:underline"
+                      >
+                        {e.name}
+                      </Link>{" "}
+                      <span className="text-muted-foreground">—</span>{" "}
+                      {CASE_STATUS_LABELS[e.status as CaseStatus] ?? e.status}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(e.occurredAt).toLocaleString()} · {e.author}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
 

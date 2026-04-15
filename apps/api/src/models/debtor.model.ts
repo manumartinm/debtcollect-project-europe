@@ -93,6 +93,10 @@ export class DebtorModel {
       debtAmount: number
       callOutcome?: string
       legalOutcome?: string
+      /** Stored in `enriched_fields` (allowed field_name values only). */
+      enriched?: Partial<
+        Record<'phone' | 'address' | 'email' | 'tax_id', string>
+      >
     }>,
   ) {
     const inserted: { id: string }[] = []
@@ -109,6 +113,23 @@ export class DebtorModel {
           legalOutcome: r.legalOutcome ?? 'unknown',
         })
         .returning({ id: debtors.id })
+
+      const e = r.enriched
+      if (e) {
+        const entries: Array<[string, string]> = []
+        if (e.phone?.trim()) entries.push(['phone', e.phone.trim()])
+        if (e.address?.trim()) entries.push(['address', e.address.trim()])
+        if (e.email?.trim()) entries.push(['email', e.email.trim()])
+        if (e.tax_id?.trim()) entries.push(['tax_id', e.tax_id.trim()])
+        for (const [fieldName, value] of entries) {
+          await db.insert(enrichedFields).values({
+            debtorId: row.id,
+            fieldName,
+            value,
+          })
+        }
+      }
+
       inserted.push(row)
     }
     return inserted

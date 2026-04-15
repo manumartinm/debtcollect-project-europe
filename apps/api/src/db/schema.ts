@@ -194,7 +194,7 @@ export const enrichedFields = pgTable(
     unique('enriched_fields_debtor_field_uniq').on(t.debtorId, t.fieldName),
     check(
       'enriched_fields_name_check',
-      sql`${t.fieldName} IN ('phone', 'address', 'employer', 'assets', 'social_media_hints', 'income_bracket')`,
+      sql`${t.fieldName} IN ('phone', 'address', 'employer', 'assets', 'social_media_hints', 'income_bracket', 'email', 'tax_id')`,
     ),
   ],
 )

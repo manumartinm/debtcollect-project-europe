@@ -1,19 +1,27 @@
 import { useState, type SyntheticEvent } from "react"
 import { Link, useNavigate } from "react-router"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@workspace/ui/components/button"
 import { useSignIn } from "@/hooks/use-auth"
+import { queryKeys } from "@/lib/query-keys"
 
 export default function SignInPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const signIn = useSignIn()
 
   async function onSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
     signIn.mutate(
       { email, password },
-      { onSuccess: () => navigate("/") },
+      {
+        onSuccess: async () => {
+          await queryClient.refetchQueries({ queryKey: queryKeys.auth.session })
+          navigate("/", { replace: true })
+        },
+      },
     )
   }
 

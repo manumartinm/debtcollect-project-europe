@@ -12,8 +12,10 @@ import {
 } from "@workspace/ui/components/table"
 import { cn } from "@workspace/ui/lib/utils"
 import { LeverageBadge } from "@/components/leverage-badge"
-import type { Debtor } from "@/data/mock"
-import { CASE_STATUS_LABELS } from "@/data/mock"
+import type { ApiDebtor } from "@/lib/api"
+import { parseDebtAmountString } from "@/lib/debtor-traces"
+import type { CaseStatus, LeverageLevel } from "@/types/debtor"
+import { CASE_STATUS_LABELS } from "@/types/debtor"
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en-EU", {
@@ -26,7 +28,7 @@ function formatMoney(n: number) {
 export type DebtorTableSortKey = "debtAmount" | "caseStatus" | "none"
 
 export type DebtorTableProps = {
-  rows: Debtor[]
+  rows: ApiDebtor[]
   page: number
   pageSize: number
   sortKey: DebtorTableSortKey
@@ -107,10 +109,10 @@ export function DebtorTable({
         </TableHeader>
         <TableBody>
           {slice.map((d, index) => {
-            const isSelected = selection?.selectedIds.has(d.debtorId) ?? false
+            const isSelected = selection?.selectedIds.has(d.id) ?? false
             return (
               <TableRow
-                key={d.debtorId}
+                key={d.id}
                 style={
                   {
                     "--vexor-stagger": `${index * 32}ms`,
@@ -121,7 +123,7 @@ export function DebtorTable({
                   isSelected && "bg-primary/5"
                 )}
                 onClick={() => {
-                  navigate(`/debtors/${encodeURIComponent(d.debtorId)}`)
+                  navigate(`/debtors/${encodeURIComponent(d.id)}`)
                 }}
               >
                 {selection ? (
@@ -133,15 +135,17 @@ export function DebtorTable({
                       type="checkbox"
                       className="size-4 cursor-pointer rounded border-input accent-primary"
                       checked={isSelected}
-                      onChange={() => selection.onToggle(d.debtorId)}
-                      aria-label={`Select ${d.name}`}
+                      onChange={() => selection.onToggle(d.id)}
+                      aria-label={`Select ${d.debtorName}`}
                     />
                   </TableCell>
                 ) : null}
                 <TableCell className="font-mono text-xs">{d.caseRef}</TableCell>
-                <TableCell className="font-medium">{d.name}</TableCell>
+                <TableCell className="font-medium">{d.debtorName}</TableCell>
                 <TableCell>{d.country}</TableCell>
-                <TableCell>{formatMoney(d.debtAmount)}</TableCell>
+                <TableCell>
+                  {formatMoney(parseDebtAmountString(d.debtAmount))}
+                </TableCell>
                 <TableCell className="max-w-[8rem] truncate text-xs text-muted-foreground">
                   {d.callOutcome}
                 </TableCell>
@@ -150,11 +154,11 @@ export function DebtorTable({
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="font-normal">
-                    {CASE_STATUS_LABELS[d.caseStatus]}
+                    {CASE_STATUS_LABELS[d.caseStatus as CaseStatus]}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <LeverageBadge score={d.leverageScore} />
+                  <LeverageBadge score={d.leverageScore as LeverageLevel} />
                 </TableCell>
                 <TableCell>
                   <Badge

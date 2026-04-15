@@ -4,6 +4,7 @@ import { OrganizationController, MemberController } from '../controllers/org.con
 export const orgsRouter = new Hono()
 
 orgsRouter.get('/', OrganizationController.list)
+orgsRouter.get('/mine', OrganizationController.listMine)
 orgsRouter.post('/', OrganizationController.create)
 
 orgsRouter.get('/:orgId/members', MemberController.list)

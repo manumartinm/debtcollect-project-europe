@@ -18,12 +18,14 @@ import {
   CommandList,
   CommandSeparator,
 } from "@workspace/ui/components/command"
-import { useDebtors } from "@/context/debtors-context"
+import { useOrg } from "@/context/org-context"
+import { useDebtorsList } from "@/hooks/use-debtors-queries"
 
 export function CommandPalette() {
   const [open, setOpen] = React.useState(false)
   const navigate = useNavigate()
-  const { debtors } = useDebtors()
+  const { orgId } = useOrg()
+  const { data: debtors = [] } = useDebtorsList(orgId ?? "")
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -71,13 +73,13 @@ export function CommandPalette() {
         <CommandGroup heading="Debtors">
           {debtors.slice(0, 40).map((d) => (
             <CommandItem
-              key={d.debtorId}
-              value={`${d.name} ${d.caseRef} ${d.debtorId}`}
-              onSelect={() => go(`/debtors/${encodeURIComponent(d.debtorId)}`)}
+              key={d.id}
+              value={`${d.debtorName} ${d.caseRef} ${d.id}`}
+              onSelect={() => go(`/debtors/${encodeURIComponent(d.id)}`)}
               className="gap-2"
             >
               <Users className="size-4 shrink-0" />
-              <span className="truncate">{d.name}</span>
+              <span className="truncate">{d.debtorName}</span>
               <span className="ml-auto font-mono text-xs text-muted-foreground">
                 {d.caseRef}
               </span>

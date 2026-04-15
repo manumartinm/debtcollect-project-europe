@@ -1,7 +1,7 @@
-import type { Debtor } from "@/data/mock"
+import type { ApiDebtor } from "@/lib/api"
 import { buildCallInsightBlocks } from "@/lib/call-insights"
 
-export function CallInsights({ debtor }: { debtor: Debtor }) {
+export function CallInsights({ debtor }: { debtor: ApiDebtor }) {
   const blocks = buildCallInsightBlocks(debtor)
 
   return (

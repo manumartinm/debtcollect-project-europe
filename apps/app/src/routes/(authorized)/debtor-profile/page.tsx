@@ -19,15 +19,10 @@ import { TraceStepDetail } from "@/components/debtor-profile/trace-step-detail"
 import { FixedFields } from "@/components/debtor-profile/fixed-fields"
 import { LeverageIndicator } from "@/components/debtor-profile/leverage-indicator"
 import { StatusTimeline } from "@/components/debtor-profile/status-timeline"
-import { useDebtors } from "@/context/debtors-context"
-import {
-  buildEnrichedFromTraces,
-  CASE_STATUS_LABELS,
-  computeLeverageFromTraces,
-  type CaseStatus,
-  type EnrichmentStatus,
-} from "@/data/mock"
-import { useEnrichmentRun } from "@/hooks/use-enrichment-sim"
+import type { ApiTraceStep } from "@/lib/api"
+import { useSession } from "@/lib/auth-client"
+import { flattenTraceSteps, parseDebtAmountString } from "@/lib/debtor-traces"
+import { useDebtor, useSetDebtorStatus } from "@/hooks/use-debtors-queries"
 import { useMinLg } from "@/hooks/use-media"
 import {
   Sheet,
@@ -35,8 +30,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@workspace/ui/components/sheet"
-import type { AiTraceStep } from "@/data/mock"
 import { ArrowLeft } from "lucide-react"
+import type { CaseStatus, EnrichmentStatus, LeverageLevel } from "@/types/debtor"
+import { CASE_STATUS_LABELS } from "@/types/debtor"
 
 const ENRICH_LABELS: Record<EnrichmentStatus, string> = {
   pending: "Pending",
@@ -60,49 +56,38 @@ export default function DebtorProfilePage() {
   const { debtorId: raw } = useParams()
   const debtorIdParam = raw ? decodeURIComponent(raw) : ""
   const navigate = useNavigate()
-  const { debtors, runEnrichmentState, setCaseStatus } = useDebtors()
   const lg = useMinLg()
-  const { run, running } = useEnrichmentRun()
-  const [traceSheetStep, setTraceSheetStep] =
-    React.useState<AiTraceStep | null>(null)
+  const { data: session } = useSession()
+  const author = session?.user?.name ?? "Collector"
 
-  const openTraceDetail = React.useCallback((step: AiTraceStep) => {
+  const { data: debtor, isLoading, isError, error } = useDebtor(debtorIdParam)
+  const setStatusMutation = useSetDebtorStatus()
+
+  const [traceSheetStep, setTraceSheetStep] =
+    React.useState<ApiTraceStep | null>(null)
+
+  const openTraceDetail = React.useCallback((step: ApiTraceStep) => {
     setTraceSheetStep(step)
   }, [])
 
-  const debtor = debtors.find((d) => d.debtorId === debtorIdParam)
-
-  const startEnrichment = React.useCallback(() => {
-    if (!debtor || debtor.enrichmentStatus !== "pending" || running) return
-    const template = debtor.traceTemplate
-    runEnrichmentState(debtor.debtorId, {
-      enrichmentStatus: "running",
-      traces: [],
-    })
-
-    run(
-      template,
-      (partial) => {
-        runEnrichmentState(debtor.debtorId, { traces: partial })
-      },
-      () => {
-        const traces = template
-        const enriched = buildEnrichedFromTraces(traces)
-        const leverageScore = computeLeverageFromTraces(traces)
-        const withFindings = traces.filter((t) => t.finding).length
-        runEnrichmentState(debtor.debtorId, {
-          enrichmentStatus: "complete",
-          traces,
-          enriched,
-          leverageScore,
-          enrichmentConfidence: 0.62,
-        })
-        toast.success(
-          `Enrichment complete — ${withFindings} of ${traces.length} steps returned a finding.`
-        )
-      }
-    )
-  }, [debtor, run, runEnrichmentState, running])
+  const handleStatusChange = React.useCallback(
+    (status: CaseStatus, note: string) => {
+      if (!debtor) return
+      setStatusMutation.mutate(
+        {
+          id: debtor.id,
+          status,
+          note: note || undefined,
+          author,
+        },
+        {
+          onSuccess: () => toast.success("Status updated."),
+          onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+        }
+      )
+    },
+    [debtor, author, setStatusMutation]
+  )
 
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -112,21 +97,28 @@ export default function DebtorProfilePage() {
           return
         }
         navigate("/debtors")
-        return
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "e") {
-        e.preventDefault()
-        startEnrichment()
       }
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [navigate, startEnrichment, traceSheetStep])
+  }, [navigate, traceSheetStep])
 
-  if (!debtor) {
+  if (isLoading) {
+    return (
+      <div className="space-y-4 text-center text-muted-foreground">
+        Loading case…
+      </div>
+    )
+  }
+
+  if (isError || !debtor) {
     return (
       <div className="space-y-4 text-center">
-        <p className="text-muted-foreground">Case not found.</p>
+        <p className="text-muted-foreground">
+          {isError
+            ? (error as Error)?.message ?? "Could not load case."
+            : "Case not found."}
+        </p>
         <Link
           to="/debtors"
           className={cn(buttonVariants({ variant: "outline" }))}
@@ -137,12 +129,16 @@ export default function DebtorProfilePage() {
     )
   }
 
+  const traces = flattenTraceSteps(debtor)
+  const lev = debtor.leverageScore as LeverageLevel
+  const enrichSt = debtor.enrichmentStatus as EnrichmentStatus
+
   const tracePanel = (
     <AgentTimeline
-      steps={debtor.traces}
+      steps={traces}
       emptyMessage={
-        debtor.enrichmentStatus === "pending"
-          ? "No enrichment data yet — click Run enrichment to start."
+        enrichSt === "pending"
+          ? "No enrichment data yet — traces appear when enrichment completes."
           : undefined
       }
       onOpenStep={openTraceDetail}
@@ -168,24 +164,14 @@ export default function DebtorProfilePage() {
   const fieldsColumn = (
     <div className="space-y-6">
       <FixedFields debtor={debtor} />
-      <DynamicFields
-        debtor={debtor}
-        running={running}
-        onRunEnrichment={startEnrichment}
-        onOpenTrace={openTraceDetail}
-      />
-      <StatusTimeline
-        debtor={debtor}
-        onStatusChange={(status: CaseStatus, note: string) =>
-          setCaseStatus(debtor.debtorId, status, note || undefined)
-        }
-      />
+      <DynamicFields debtor={debtor} onOpenTrace={openTraceDetail} />
+      <StatusTimeline debtor={debtor} onStatusChange={handleStatusChange} />
     </div>
   )
 
   const insightsColumn = (
     <div className="space-y-6">
-      <LeverageIndicator score={debtor.leverageScore} />
+      <LeverageIndicator score={lev} />
       <div className="rounded-xl border border-border bg-card p-5">
         <h2 className="text-sm font-semibold text-foreground">
           Insights & key points
@@ -241,7 +227,7 @@ export default function DebtorProfilePage() {
             Debtors
           </Link>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            {debtor.name}
+            {debtor.debtorName}
           </h1>
           <p className="font-mono text-xs text-muted-foreground">
             {debtor.caseRef}
@@ -252,7 +238,7 @@ export default function DebtorProfilePage() {
                 Debt
               </dt>
               <dd className="mt-0.5 text-sm font-semibold text-foreground tabular-nums">
-                {formatDebtEur(debtor.debtAmount)}
+                {formatDebtEur(parseDebtAmountString(debtor.debtAmount))}
               </dd>
             </div>
             <div className="min-w-0">
@@ -269,7 +255,7 @@ export default function DebtorProfilePage() {
               </dt>
               <dd className="mt-0.5">
                 <Badge variant="secondary" className="text-[11px] font-normal">
-                  {CASE_STATUS_LABELS[debtor.caseStatus]}
+                  {CASE_STATUS_LABELS[debtor.caseStatus as CaseStatus]}
                 </Badge>
               </dd>
             </div>
@@ -279,24 +265,12 @@ export default function DebtorProfilePage() {
               </dt>
               <dd className="mt-0.5">
                 <Badge variant="outline" className="text-[11px] font-normal">
-                  {ENRICH_LABELS[debtor.enrichmentStatus]}
+                  {ENRICH_LABELS[enrichSt]}
                 </Badge>
               </dd>
             </div>
           </dl>
         </div>
-        {debtor.enrichmentStatus === "pending" ? (
-          <p className="text-xs text-muted-foreground">
-            <kbd className="rounded border border-border bg-muted px-1 font-mono text-[11px]">
-              ⌘E
-            </kbd>{" "}
-            run enrichment ·{" "}
-            <kbd className="rounded border border-border bg-muted px-1 font-mono text-[11px]">
-              Esc
-            </kbd>{" "}
-            back
-          </p>
-        ) : null}
       </div>
 
       {!lg ? (

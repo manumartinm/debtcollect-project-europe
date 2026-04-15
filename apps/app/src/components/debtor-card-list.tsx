@@ -6,8 +6,10 @@ import { Card } from "@workspace/ui/components/card"
 import { cn } from "@workspace/ui/lib/utils"
 
 import { LeverageBadge } from "@/components/leverage-badge"
-import type { Debtor } from "@/data/mock"
-import { CASE_STATUS_LABELS } from "@/data/mock"
+import type { ApiDebtor } from "@/lib/api"
+import { parseDebtAmountString } from "@/lib/debtor-traces"
+import type { CaseStatus, LeverageLevel } from "@/types/debtor"
+import { CASE_STATUS_LABELS } from "@/types/debtor"
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en-EU", {
@@ -23,7 +25,7 @@ export function DebtorCardList({
   pageSize,
   selection,
 }: {
-  rows: Debtor[]
+  rows: ApiDebtor[]
   page: number
   pageSize: number
   selection?: {
@@ -37,9 +39,9 @@ export function DebtorCardList({
   return (
     <ul className="space-y-3">
       {slice.map((d, index) => {
-        const isSelected = selection?.selectedIds.has(d.debtorId) ?? false
+        const isSelected = selection?.selectedIds.has(d.id) ?? false
         return (
-          <li key={d.debtorId}>
+          <li key={d.id}>
             <Card
               role="button"
               tabIndex={0}
@@ -53,11 +55,11 @@ export function DebtorCardList({
                 isSelected && "ring-2 ring-primary/30 bg-primary/[0.03]"
               )}
               onClick={() =>
-                navigate(`/debtors/${encodeURIComponent(d.debtorId)}`)
+                navigate(`/debtors/${encodeURIComponent(d.id)}`)
               }
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ")
-                  navigate(`/debtors/${encodeURIComponent(d.debtorId)}`)
+                  navigate(`/debtors/${encodeURIComponent(d.id)}`)
               }}
             >
               <div className="flex items-start gap-3">
@@ -71,28 +73,28 @@ export function DebtorCardList({
                       type="checkbox"
                       className="size-4 cursor-pointer rounded border-input accent-primary"
                       checked={isSelected}
-                      onChange={() => selection.onToggle(d.debtorId)}
-                      aria-label={`Select ${d.name}`}
+                      onChange={() => selection.onToggle(d.id)}
+                      aria-label={`Select ${d.debtorName}`}
                     />
                   </div>
                 ) : null}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-foreground">{d.name}</p>
+                      <p className="truncate font-medium text-foreground">{d.debtorName}</p>
                       <p className="font-mono text-xs text-muted-foreground">
                         {d.caseRef} · {d.country}
                       </p>
                     </div>
                     <p className="shrink-0 text-sm font-semibold tabular-nums">
-                      {formatMoney(d.debtAmount)}
+                      {formatMoney(parseDebtAmountString(d.debtAmount))}
                     </p>
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <Badge variant="outline" className="font-normal">
-                      {CASE_STATUS_LABELS[d.caseStatus]}
+                      {CASE_STATUS_LABELS[d.caseStatus as CaseStatus]}
                     </Badge>
-                    <LeverageBadge score={d.leverageScore} />
+                    <LeverageBadge score={d.leverageScore as LeverageLevel} />
                   </div>
                 </div>
               </div>
