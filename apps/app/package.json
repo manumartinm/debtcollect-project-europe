@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.99.0",
     "@tanstack/react-table": "^8.21.3",
     "@workspace/ui": "workspace:*",
     "lucide-react": "^1.8.0",
