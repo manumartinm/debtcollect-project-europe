@@ -1,0 +1,161 @@
+/* eslint-disable react-refresh/only-export-components */
+import * as React from "react"
+import {
+  type Debtor,
+  type StatusEvent,
+  type CaseStatus,
+  INITIAL_DEBTORS,
+  computeLeverageFromTraces,
+  type EnrichmentStatus,
+} from "@/data/mock"
+
+type DebtorsContextValue = {
+  debtors: Debtor[]
+  setDebtors: React.Dispatch<React.SetStateAction<Debtor[]>>
+  upsertDebtor: (d: Debtor) => void
+  updateDebtor: (caseId: string, patch: Partial<Debtor>) => void
+  appendDebtorsFromImport: (rows: Debtor[]) => void
+  addStatusEvent: (caseId: string, event: StatusEvent) => void
+  setCaseStatus: (caseId: string, status: CaseStatus, note?: string) => void
+  runEnrichmentState: (
+    caseId: string,
+    patch: Partial<Debtor> & {
+      enrichmentStatus?: EnrichmentStatus
+      traces?: Debtor["traces"]
+    }
+  ) => void
+}
+
+const DebtorsContext = React.createContext<DebtorsContextValue | null>(null)
+
+export function DebtorsProvider({ children }: { children: React.ReactNode }) {
+  const [debtors, setDebtors] = React.useState<Debtor[]>(() => [...INITIAL_DEBTORS])
+
+  const upsertDebtor = React.useCallback((d: Debtor) => {
+    setDebtors((prev) => {
+      const i = prev.findIndex((x) => x.caseId === d.caseId)
+      if (i === -1) return [...prev, d]
+      const next = [...prev]
+      next[i] = d
+      return next
+    })
+  }, [])
+
+  const updateDebtor = React.useCallback((caseId: string, patch: Partial<Debtor>) => {
+    setDebtors((prev) =>
+      prev.map((d) => (d.caseId === caseId ? { ...d, ...patch } : d))
+    )
+  }, [])
+
+  const appendDebtorsFromImport = React.useCallback((rows: Debtor[]) => {
+    setDebtors((prev) => {
+      const seen = new Set(prev.map((d) => d.caseId))
+      const merged = [...prev]
+      for (const r of rows) {
+        if (!seen.has(r.caseId)) {
+          seen.add(r.caseId)
+          merged.push(r)
+        } else {
+          const i = merged.findIndex((d) => d.caseId === r.caseId)
+          if (i !== -1) merged[i] = { ...merged[i], ...r }
+        }
+      }
+      return merged
+    })
+  }, [])
+
+  const addStatusEvent = React.useCallback((caseId: string, event: StatusEvent) => {
+    setDebtors((prev) =>
+      prev.map((d) =>
+        d.caseId === caseId
+          ? { ...d, statusHistory: [event, ...d.statusHistory] }
+          : d
+      )
+    )
+  }, [])
+
+  const setCaseStatus = React.useCallback(
+    (caseId: string, status: CaseStatus, note?: string) => {
+      const event: StatusEvent = {
+        id: `${caseId}-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        status,
+        note,
+        author: "You",
+      }
+      setDebtors((prev) =>
+        prev.map((d) =>
+          d.caseId === caseId
+            ? {
+                ...d,
+                caseStatus: status,
+                statusHistory: [event, ...d.statusHistory],
+              }
+            : d
+        )
+      )
+    },
+    []
+  )
+
+  const runEnrichmentState = React.useCallback(
+    (
+      caseId: string,
+      patch: Partial<Debtor> & {
+        enrichmentStatus?: EnrichmentStatus
+        traces?: Debtor["traces"]
+      }
+    ) => {
+      setDebtors((prev) =>
+        prev.map((d) => {
+          if (d.caseId !== caseId) return d
+          const nextTraces = patch.traces ?? d.traces
+          const leverageScore =
+            patch.leverageScore ??
+            (nextTraces.length
+              ? computeLeverageFromTraces(nextTraces)
+              : d.leverageScore)
+          return {
+            ...d,
+            ...patch,
+            traces: nextTraces,
+            leverageScore,
+          }
+        })
+      )
+    },
+    []
+  )
+
+  const value = React.useMemo(
+    () => ({
+      debtors,
+      setDebtors,
+      upsertDebtor,
+      updateDebtor,
+      appendDebtorsFromImport,
+      addStatusEvent,
+      setCaseStatus,
+      runEnrichmentState,
+    }),
+    [
+      debtors,
+      upsertDebtor,
+      updateDebtor,
+      appendDebtorsFromImport,
+      addStatusEvent,
+      setCaseStatus,
+      runEnrichmentState,
+    ]
+  )
+
+  return (
+    <DebtorsContext.Provider value={value}>{children}</DebtorsContext.Provider>
+  )
+}
+
+export function useDebtors() {
+  const ctx = React.useContext(DebtorsContext)
+  if (!ctx) throw new Error("useDebtors must be used within DebtorsProvider")
+  return ctx
+}
