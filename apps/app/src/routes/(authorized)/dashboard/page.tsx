@@ -3,7 +3,12 @@ import { Link, useNavigate } from "react-router"
 import { ArrowRight, Sparkles, Upload } from "lucide-react"
 
 import { buttonVariants } from "@workspace/ui/components/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card"
 import { Separator } from "@workspace/ui/components/separator"
 import { cn } from "@workspace/ui/lib/utils"
 
@@ -78,9 +83,7 @@ export default function DashboardPage() {
         </div>
         <Link
           to="/upload"
-          className={cn(
-            buttonVariants({ className: "gap-2 self-start" })
-          )}
+          className={cn(buttonVariants({ className: "gap-2 self-start" }))}
         >
           <Upload className="size-4" />
           Upload CSV
@@ -159,8 +162,9 @@ export default function DashboardPage() {
                   <div key={status} className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">
-                        {CASE_STATUS_LABELS[status as keyof typeof CASE_STATUS_LABELS] ??
-                          status}
+                        {CASE_STATUS_LABELS[
+                          status as keyof typeof CASE_STATUS_LABELS
+                        ] ?? status}
                       </span>
                       <span className="font-medium">{n}</span>
                     </div>

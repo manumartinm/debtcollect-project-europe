@@ -4,7 +4,12 @@ import { toast } from "sonner"
 
 import { Badge } from "@workspace/ui/components/badge"
 import { buttonVariants } from "@workspace/ui/components/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@workspace/ui/components/tabs"
 import { cn } from "@workspace/ui/lib/utils"
 
 import { AgentTimeline } from "@/components/debtor-profile/agent-timeline"
@@ -58,7 +63,8 @@ export default function DebtorProfilePage() {
   const { debtors, runEnrichmentState, setCaseStatus } = useDebtors()
   const lg = useMinLg()
   const { run, running } = useEnrichmentRun()
-  const [traceSheetStep, setTraceSheetStep] = React.useState<AiTraceStep | null>(null)
+  const [traceSheetStep, setTraceSheetStep] =
+    React.useState<AiTraceStep | null>(null)
 
   const openTraceDetail = React.useCallback((step: AiTraceStep) => {
     setTraceSheetStep(step)
@@ -69,7 +75,10 @@ export default function DebtorProfilePage() {
   const startEnrichment = React.useCallback(() => {
     if (!debtor || debtor.enrichmentStatus !== "pending" || running) return
     const template = debtor.traceTemplate
-    runEnrichmentState(debtor.caseId, { enrichmentStatus: "running", traces: [] })
+    runEnrichmentState(debtor.caseId, {
+      enrichmentStatus: "running",
+      traces: [],
+    })
 
     run(
       template,
@@ -118,7 +127,10 @@ export default function DebtorProfilePage() {
     return (
       <div className="space-y-4 text-center">
         <p className="text-muted-foreground">Case not found.</p>
-        <Link to="/debtors" className={cn(buttonVariants({ variant: "outline" }))}>
+        <Link
+          to="/debtors"
+          className={cn(buttonVariants({ variant: "outline" }))}
+        >
           Back to debtors
         </Link>
       </div>
@@ -144,8 +156,9 @@ export default function DebtorProfilePage() {
           AI agent trace
         </h2>
         <p className="hidden text-[11px] leading-snug text-muted-foreground lg:block">
-          Pipeline steps. Use <span className="font-medium">Open trace details</span> or
-          field sparkles for the full step.
+          Pipeline steps. Use{" "}
+          <span className="font-medium">Open trace details</span> or field
+          sparkles for the full step.
         </p>
         {tracePanel}
       </div>
@@ -174,10 +187,12 @@ export default function DebtorProfilePage() {
     <div className="space-y-6">
       <LeverageIndicator score={debtor.leverageScore} />
       <div className="rounded-xl border border-border bg-card p-5">
-        <h2 className="text-sm font-semibold text-foreground">Insights & key points</h2>
+        <h2 className="text-sm font-semibold text-foreground">
+          Insights & key points
+        </h2>
         <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-          What to follow on the call — posture, facts, and compliance anchors. Not legal
-          advice.
+          What to follow on the call — posture, facts, and compliance anchors.
+          Not legal advice.
         </p>
         <div className="mt-5">
           <CallInsights debtor={debtor} />
@@ -192,7 +207,10 @@ export default function DebtorProfilePage() {
         variant="line"
         className="mb-0 h-auto w-full min-w-0 justify-start gap-4 border-b border-border bg-transparent p-0 shadow-none"
       >
-        <TabsTrigger value="insights" className={cn(leadTabTriggerClass, "data-active:font-semibold")}>
+        <TabsTrigger
+          value="insights"
+          className={cn(leadTabTriggerClass, "data-active:font-semibold")}
+        >
           Insights
         </TabsTrigger>
         <TabsTrigger value="fields" className={leadTabTriggerClass}>
@@ -209,7 +227,7 @@ export default function DebtorProfilePage() {
   )
 
   return (
-    <div className="w-full min-w-0 space-y-6 pb-24 pt-1 lg:pb-8">
+    <div className="w-full min-w-0 space-y-6 pt-1 pb-24 lg:pb-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 space-y-1">
           <Link
@@ -225,24 +243,28 @@ export default function DebtorProfilePage() {
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             {debtor.name}
           </h1>
-          <p className="font-mono text-xs text-muted-foreground">{debtor.caseId}</p>
+          <p className="font-mono text-xs text-muted-foreground">
+            {debtor.caseId}
+          </p>
           <dl className="mt-3 grid max-w-full grid-cols-2 gap-x-4 gap-y-2 border-b border-border pb-4 sm:grid-cols-4 lg:flex lg:flex-wrap lg:gap-x-8 lg:gap-y-2">
             <div className="min-w-0">
-              <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <dt className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                 Debt
               </dt>
-              <dd className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
+              <dd className="mt-0.5 text-sm font-semibold text-foreground tabular-nums">
                 {formatDebtEur(debtor.debtAmount)}
               </dd>
             </div>
             <div className="min-w-0">
-              <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <dt className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                 Country
               </dt>
-              <dd className="mt-0.5 text-sm font-medium text-foreground">{debtor.country}</dd>
+              <dd className="mt-0.5 text-sm font-medium text-foreground">
+                {debtor.country}
+              </dd>
             </div>
             <div className="min-w-0">
-              <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <dt className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                 Case status
               </dt>
               <dd className="mt-0.5">
@@ -252,7 +274,7 @@ export default function DebtorProfilePage() {
               </dd>
             </div>
             <div className="min-w-0">
-              <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <dt className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                 Enrichment
               </dt>
               <dd className="mt-0.5">
@@ -327,7 +349,7 @@ export default function DebtorProfilePage() {
           {traceSheetStep ? (
             <>
               <SheetHeader className="border-b border-border px-6 py-4 text-left">
-                <SheetTitle className="text-base font-semibold leading-snug">
+                <SheetTitle className="text-base leading-snug font-semibold">
                   Step {traceSheetStep.stepNumber} · {traceSheetStep.agentName}
                 </SheetTitle>
               </SheetHeader>

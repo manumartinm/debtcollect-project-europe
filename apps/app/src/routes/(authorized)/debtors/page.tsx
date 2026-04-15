@@ -29,11 +29,7 @@ const COUNTRIES = ["all", "ES", "PT", "IT", "GR"] as const
 const ENRICH = ["all", "pending", "complete", "failed"] as const
 type SortKey = "debtAmount" | "caseStatus" | "none"
 
-function sortRows(
-  rows: Debtor[],
-  key: SortKey,
-  dir: "asc" | "desc"
-): Debtor[] {
+function sortRows(rows: Debtor[], key: SortKey, dir: "asc" | "desc"): Debtor[] {
   if (key === "none") return rows
   const mul = dir === "asc" ? 1 : -1
   return [...rows].sort((a, b) => {
@@ -59,14 +55,11 @@ function FilterSelect({
     <div className="flex min-w-26 flex-1 flex-col gap-1 sm:min-w-30 sm:flex-none">
       <Label
         htmlFor={id}
-        className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+        className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase"
       >
         {label}
       </Label>
-      <Select
-        value={value}
-        onValueChange={(v) => onValueChange(v ?? "")}
-      >
+      <Select value={value} onValueChange={(v) => onValueChange(v ?? "")}>
         <SelectTrigger id={id} className="h-9 w-full text-xs sm:text-sm">
           <SelectValue />
         </SelectTrigger>
@@ -88,7 +81,9 @@ export default function DebtorsPage() {
   const [page, setPage] = React.useState(0)
   const [sortKey, setSortKey] = React.useState<SortKey>("none")
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("desc")
-  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(() => new Set())
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(
+    () => new Set()
+  )
 
   const filtered = React.useMemo(() => {
     return debtors.filter((d) => {
@@ -149,14 +144,17 @@ export default function DebtorsPage() {
     })
   }, [])
 
-  const toggleSelectPage = React.useCallback((ids: string[], select: boolean) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (select) ids.forEach((id) => next.add(id))
-      else ids.forEach((id) => next.delete(id))
-      return next
-    })
-  }, [])
+  const toggleSelectPage = React.useCallback(
+    (ids: string[], select: boolean) => {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        if (select) ids.forEach((id) => next.add(id))
+        else ids.forEach((id) => next.delete(id))
+        return next
+      })
+    },
+    []
+  )
 
   const applyBulkStatus = React.useCallback(
     (st: CaseStatus) => {
@@ -181,10 +179,7 @@ export default function DebtorsPage() {
   const listStaggerKey = `${safePage}-${q}-${status}-${country}-${enrich}-${sortKey}-${sortDir}`
 
   const hasActiveFilters =
-    q.trim() !== "" ||
-    status !== "all" ||
-    country !== "all" ||
-    enrich !== "all"
+    q.trim() !== "" || status !== "all" || country !== "all" || enrich !== "all"
 
   if (debtors.length === 0) {
     return (
@@ -234,12 +229,12 @@ export default function DebtorsPage() {
         <div className="flex min-w-0 flex-1 flex-col gap-1 lg:max-w-md">
           <Label
             htmlFor="debtor-search"
-            className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+            className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase"
           >
             Search
           </Label>
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="debtor-search"
               placeholder="Name or case ID…"
@@ -332,7 +327,7 @@ export default function DebtorsPage() {
           <div className="flex min-w-40 flex-1 flex-col gap-1 sm:max-w-xs sm:flex-none">
             <Label
               htmlFor="bulk-status"
-              className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+              className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase"
             >
               Set status
             </Label>
@@ -341,7 +336,10 @@ export default function DebtorsPage() {
                 if (v) applyBulkStatus(v as CaseStatus)
               }}
             >
-              <SelectTrigger id="bulk-status" className="h-9 bg-background text-xs">
+              <SelectTrigger
+                id="bulk-status"
+                className="h-9 bg-background text-xs"
+              >
                 <SelectValue placeholder="Choose status…" />
               </SelectTrigger>
               <SelectContent>

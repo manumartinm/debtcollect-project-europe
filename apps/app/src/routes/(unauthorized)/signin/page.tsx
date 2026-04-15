@@ -9,7 +9,7 @@ export default function SignInPage() {
   const [message, setMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-	async function onSubmit(event: SyntheticEvent<HTMLFormElement>) {
+  async function onSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsLoading(true)
     setMessage("")
