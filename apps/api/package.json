@@ -9,11 +9,16 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:check": "drizzle-kit check"
+    "db:check": "drizzle-kit check",
+    "trigger:dev": "trigger.dev dev",
+    "trigger:deploy": "trigger.dev deploy",
+    "trigger:login": "trigger.dev login",
+    "trigger:list": "trigger.dev list"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.53",
     "@hono/node-server": "^1.19.14",
+    "@trigger.dev/sdk": "4.4.4",
     "ai": "^6.0.161",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
@@ -21,9 +26,11 @@
     "pg": "^8.20.0"
   },
   "devDependencies": {
+    "@trigger.dev/build": "4.4.4",
     "@types/node": "^20.11.17",
     "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10",
+    "trigger.dev": "^4.4.4",
     "tsx": "^4.21.0",
     "typescript": "^5.8.3"
   }
