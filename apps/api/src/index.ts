@@ -1,8 +1,10 @@
 import 'dotenv/config'
 import { serve } from '@hono/node-server'
+import { Scalar } from '@scalar/hono-api-reference'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { auth } from './lib/auth.js'
+import { openApiSpec } from './openapi.js'
 import { debtorsRouter } from './routes/debtors.js'
 import { orgsRouter } from './routes/orgs.js'
 
@@ -29,6 +31,17 @@ app.on(['POST', 'GET'], '/api/auth/*', (c) => {
   return auth.handler(c.req.raw)
 })
 
+app.get('/api/openapi.json', (c) => c.json(openApiSpec))
+
+app.get(
+  '/api/docs',
+  Scalar({
+    pageTitle: 'Project Europe API',
+    theme: 'default',
+    content: openApiSpec,
+  }),
+)
+
 app.route('/api/debtors', debtorsRouter)
 app.route('/api/orgs', orgsRouter)
 
@@ -45,6 +58,8 @@ serve(
     port: 3000,
   },
   (info) => {
-    console.log(`Server is running on http://localhost:${info.port}`)
+    const base = `http://localhost:${info.port}`
+    console.log(`Server is running on ${base}`)
+    console.log(`API docs: ${base}/api/docs  ·  OpenAPI: ${base}/api/openapi.json`)
   },
 )
