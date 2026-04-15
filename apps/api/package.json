@@ -20,6 +20,7 @@
     "@hono/node-server": "^1.19.14",
     "@trigger.dev/sdk": "4.4.4",
     "ai": "^6.0.161",
+    "better-auth": "^1.6.4",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.14",
