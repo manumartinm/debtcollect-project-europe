@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   type ColumnDef,
   flexRender,
@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table"
+import { api } from "@/lib/api"
 
 type Payment = {
   id: string
@@ -24,6 +25,29 @@ type Payment = {
 }
 
 export default function HomePage() {
+  const [helloMessage, setHelloMessage] = useState<string>("Loading API message...")
+
+  useEffect(() => {
+    let isMounted = true
+
+    api
+      .get<{ message: string }>("/hello")
+      .then((result) => {
+        if (isMounted) {
+          setHelloMessage(result.message)
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setHelloMessage("Could not reach API")
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   const data = useMemo<Payment[]>(
     () => [
       {
@@ -109,6 +133,7 @@ export default function HomePage() {
         <p className="text-sm text-muted-foreground">
           TanStack Table running with shared UI table primitives.
         </p>
+        <p className="text-sm text-muted-foreground">API says: {helloMessage}</p>
       </div>
 
       <div className="overflow-hidden rounded-md border">

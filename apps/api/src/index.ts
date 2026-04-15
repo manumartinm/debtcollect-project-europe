@@ -18,6 +18,13 @@ app.get('/', (c) => {
   return c.text('Hello Hono!')
 })
 
+app.get('/hello', (c) => {
+  return c.json({
+    message: 'Hello from API',
+    timestamp: new Date().toISOString(),
+  })
+})
+
 serve({
   fetch: app.fetch,
   port: 3000
