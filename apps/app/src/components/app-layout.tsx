@@ -4,12 +4,14 @@ import { User } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/dropdown-menu"
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar"
+import { Button } from "@workspace/ui/components/button"
 import { cn } from "@workspace/ui/lib/utils"
 
 import { CommandPalette } from "@/components/command-palette"
@@ -26,26 +28,39 @@ export function AppLayout() {
         )}
       >
         <div className="hidden min-w-0 flex-1 md:block" aria-hidden />
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex size-9 items-center justify-center rounded-full border-0 bg-transparent outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-ring">
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-9 shrink-0 rounded-full"
+                aria-label="Open account menu"
+              />
+            }
+          >
             <Avatar className="size-8">
               <AvatarFallback className="bg-muted text-xs font-medium text-muted-foreground">
                 VM
               </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuLabel>
-              <div className="flex flex-col gap-0.5">
-                <span className="font-medium">Demo User</span>
-                <span className="text-xs font-normal text-muted-foreground">
-                  collector@vexor.demo
-                </span>
-              </div>
-            </DropdownMenuLabel>
+          <DropdownMenuContent
+            align="end"
+            sideOffset={6}
+            className="z-200 w-56"
+          >
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col gap-0.5 py-0.5">
+                  <span className="text-sm font-medium text-foreground">Demo User</span>
+                  <span className="text-xs text-muted-foreground">collector@vexor.demo</span>
+                </div>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem disabled>
-              <User className="size-4" />
+            <DropdownMenuItem disabled className="gap-2">
+              <User className="size-4 opacity-70" />
               Account (demo)
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -53,7 +68,7 @@ export function AppLayout() {
       </header>
       <main
         className={cn(
-          "mx-auto w-full max-w-5xl flex-1 px-4 pb-28 pt-8 md:pb-12 md:pl-56 md:pr-8 lg:pb-14"
+          "mx-auto w-full max-w-[min(100%,90rem)] flex-1 px-4 pb-28 pt-6 md:pb-12 md:pl-56 md:pr-10 lg:pb-14 lg:pt-8"
         )}
       >
         <Outlet />

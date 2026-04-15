@@ -21,7 +21,7 @@ import { useDebtors } from "@/context/debtors-context"
 import type { CaseStatus, Debtor } from "@/data/mock"
 import { CASE_STATUS_LABELS } from "@/data/mock"
 import { useMinLg } from "@/hooks/use-media"
-import { Search, SlidersHorizontal, Upload } from "lucide-react"
+import { Search, Upload } from "lucide-react"
 
 const PAGE = 15
 
@@ -42,8 +42,42 @@ function sortRows(
   })
 }
 
+function FilterSelect({
+  id,
+  label,
+  value,
+  onValueChange,
+  children,
+}: {
+  id: string
+  label: string
+  value: string
+  onValueChange: (v: string) => void
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex min-w-26 flex-1 flex-col gap-1 sm:min-w-30 sm:flex-none">
+      <Label
+        htmlFor={id}
+        className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+      >
+        {label}
+      </Label>
+      <Select
+        value={value}
+        onValueChange={(v) => onValueChange(v ?? "")}
+      >
+        <SelectTrigger id={id} className="h-9 w-full text-xs sm:text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>{children}</SelectContent>
+      </Select>
+    </div>
+  )
+}
+
 export default function DebtorsPage() {
-  const { debtors } = useDebtors()
+  const { debtors, setCaseStatus } = useDebtors()
   const navigate = useNavigate()
   const lg = useMinLg()
 
@@ -51,10 +85,10 @@ export default function DebtorsPage() {
   const [status, setStatus] = React.useState<string>("all")
   const [country, setCountry] = React.useState<string>("all")
   const [enrich, setEnrich] = React.useState<string>("all")
-  const [filtersOpen, setFiltersOpen] = React.useState(false)
   const [page, setPage] = React.useState(0)
   const [sortKey, setSortKey] = React.useState<SortKey>("none")
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("desc")
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(() => new Set())
 
   const filtered = React.useMemo(() => {
     return debtors.filter((d) => {
@@ -77,6 +111,23 @@ export default function DebtorsPage() {
   const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE))
   const safePage = Math.min(page, pageCount - 1)
 
+  const pageIds = React.useMemo(
+    () =>
+      sorted
+        .slice(safePage * PAGE, safePage * PAGE + PAGE)
+        .map((d) => d.caseId),
+    [sorted, safePage]
+  )
+
+  const selectedDebtors = React.useMemo(
+    () => debtors.filter((d) => selectedIds.has(d.caseId)),
+    [debtors, selectedIds]
+  )
+
+  React.useEffect(() => {
+    setSelectedIds(new Set())
+  }, [q, status, country, enrich])
+
   const onSort = (k: SortKey) => {
     if (k === "none") return
     setSortKey((prev) => {
@@ -89,7 +140,51 @@ export default function DebtorsPage() {
     })
   }
 
+  const toggleSelect = React.useCallback((caseId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(caseId)) next.delete(caseId)
+      else next.add(caseId)
+      return next
+    })
+  }, [])
+
+  const toggleSelectPage = React.useCallback((ids: string[], select: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (select) ids.forEach((id) => next.add(id))
+      else ids.forEach((id) => next.delete(id))
+      return next
+    })
+  }, [])
+
+  const applyBulkStatus = React.useCallback(
+    (st: CaseStatus) => {
+      selectedIds.forEach((id) => {
+        setCaseStatus(id, st, "Bulk update")
+      })
+      setSelectedIds(new Set())
+    },
+    [selectedIds, setCaseStatus]
+  )
+
+  const selectionProps = React.useMemo(
+    () => ({
+      selectedIds,
+      onToggle: toggleSelect,
+      onTogglePage: toggleSelectPage,
+      pageIds,
+    }),
+    [selectedIds, toggleSelect, toggleSelectPage, pageIds]
+  )
+
   const listStaggerKey = `${safePage}-${q}-${status}-${country}-${enrich}-${sortKey}-${sortDir}`
+
+  const hasActiveFilters =
+    q.trim() !== "" ||
+    status !== "all" ||
+    country !== "all" ||
+    enrich !== "all"
 
   if (debtors.length === 0) {
     return (
@@ -109,12 +204,18 @@ export default function DebtorsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="space-y-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Debtors</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {sorted.length} case{sorted.length === 1 ? "" : "s"}
+            {selectedIds.size > 0 ? (
+              <span className="text-foreground">
+                {" "}
+                · {selectedIds.size} selected
+              </span>
+            ) : null}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -128,107 +229,142 @@ export default function DebtorsPage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search name or case ID…"
-            className="h-11 pl-10"
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value)
+      {/* Filters: one horizontal row (wraps on narrow screens) */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-1 lg:max-w-md">
+          <Label
+            htmlFor="debtor-search"
+            className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+          >
+            Search
+          </Label>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="debtor-search"
+              placeholder="Name or case ID…"
+              className="h-9 pl-10 text-sm"
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value)
+                setPage(0)
+              }}
+            />
+          </div>
+        </div>
+        <div className="flex flex-wrap items-end gap-2 sm:gap-3 lg:flex-1 lg:justify-end">
+          <FilterSelect
+            id="filter-status"
+            label="Status"
+            value={status}
+            onValueChange={(v) => {
+              setStatus(v)
               setPage(0)
             }}
-          />
+          >
+            <SelectItem value="all">All</SelectItem>
+            {(Object.keys(CASE_STATUS_LABELS) as CaseStatus[]).map((s) => (
+              <SelectItem key={s} value={s}>
+                {CASE_STATUS_LABELS[s]}
+              </SelectItem>
+            ))}
+          </FilterSelect>
+          <FilterSelect
+            id="filter-country"
+            label="Country"
+            value={country}
+            onValueChange={(v) => {
+              setCountry(v)
+              setPage(0)
+            }}
+          >
+            {COUNTRIES.map((c) => (
+              <SelectItem key={c} value={c}>
+                {c === "all" ? "All" : c}
+              </SelectItem>
+            ))}
+          </FilterSelect>
+          <FilterSelect
+            id="filter-enrich"
+            label="Enrichment"
+            value={enrich}
+            onValueChange={(v) => {
+              setEnrich(v)
+              setPage(0)
+            }}
+          >
+            {ENRICH.map((c) => (
+              <SelectItem key={c} value={c}>
+                {c === "all" ? "All" : c}
+              </SelectItem>
+            ))}
+          </FilterSelect>
+          {hasActiveFilters ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-9 shrink-0 text-xs text-muted-foreground"
+              onClick={() => {
+                setQ("")
+                setStatus("all")
+                setCountry("all")
+                setEnrich("all")
+                setPage(0)
+              }}
+            >
+              Reset filters
+            </Button>
+          ) : null}
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11 gap-2 lg:hidden"
-          onClick={() => setFiltersOpen((o) => !o)}
-        >
-          <SlidersHorizontal className="size-4" />
-          Filters
-        </Button>
       </div>
 
-      <div
-        className={cn(
-          "grid gap-4 rounded-xl border border-border bg-muted/10 p-4 sm:grid-cols-2 lg:grid-cols-3",
-          !filtersOpen && "hidden lg:grid"
-        )}
-      >
-        <div className="space-y-2">
-          <Label className="text-xs">Status</Label>
-          <Select
-            value={status}
-            onValueChange={(v: string | null) => {
-              if (v) {
-                setStatus(v)
-                setPage(0)
-              }
-            }}
+      {selectedIds.size > 0 ? (
+        <div
+          className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2.5"
+          role="region"
+          aria-label="Bulk actions"
+        >
+          <span className="text-sm font-medium text-foreground">
+            {selectedIds.size} selected
+          </span>
+          <div className="mx-1 hidden h-6 w-px bg-border sm:block" />
+          <div className="flex min-w-40 flex-1 flex-col gap-1 sm:max-w-xs sm:flex-none">
+            <Label
+              htmlFor="bulk-status"
+              className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+            >
+              Set status
+            </Label>
+            <Select
+              onValueChange={(v) => {
+                if (v) applyBulkStatus(v as CaseStatus)
+              }}
+            >
+              <SelectTrigger id="bulk-status" className="h-9 bg-background text-xs">
+                <SelectValue placeholder="Choose status…" />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(CASE_STATUS_LABELS) as CaseStatus[]).map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {CASE_STATUS_LABELS[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <ExportButton debtors={selectedDebtors} />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9"
+            onClick={() => setSelectedIds(new Set())}
           >
-            <SelectTrigger className="h-10">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              {(Object.keys(CASE_STATUS_LABELS) as CaseStatus[]).map((s) => (
-                <SelectItem key={s} value={s}>
-                  {CASE_STATUS_LABELS[s]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            Clear selection
+          </Button>
         </div>
-        <div className="space-y-2">
-          <Label className="text-xs">Country</Label>
-          <Select
-            value={country}
-            onValueChange={(v: string | null) => {
-              if (v) {
-                setCountry(v)
-                setPage(0)
-              }
-            }}
-          >
-            <SelectTrigger className="h-10">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {COUNTRIES.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c === "all" ? "All" : c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label className="text-xs">Enrichment</Label>
-          <Select
-            value={enrich}
-            onValueChange={(v: string | null) => {
-              if (v) {
-                setEnrich(v)
-                setPage(0)
-              }
-            }}
-          >
-            <SelectTrigger className="h-10">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ENRICH.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c === "all" ? "All" : c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      ) : null}
 
       {sorted.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
@@ -255,6 +391,7 @@ export default function DebtorsPage() {
           sortKey={sortKey}
           sortDir={sortDir}
           onSort={onSort}
+          selection={selectionProps}
         />
       ) : (
         <DebtorCardList
@@ -262,6 +399,10 @@ export default function DebtorsPage() {
           rows={sorted}
           page={safePage}
           pageSize={PAGE}
+          selection={{
+            selectedIds,
+            onToggle: toggleSelect,
+          }}
         />
       )}
 

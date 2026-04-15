@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table"
+import { cn } from "@workspace/ui/lib/utils"
 import { LeverageBadge } from "@/components/leverage-badge"
 import type { Debtor } from "@/data/mock"
 import { CASE_STATUS_LABELS } from "@/data/mock"
@@ -22,7 +23,22 @@ function formatMoney(n: number) {
   }).format(n)
 }
 
-type SortKey = "debtAmount" | "caseStatus" | "none"
+export type DebtorTableSortKey = "debtAmount" | "caseStatus" | "none"
+
+export type DebtorTableProps = {
+  rows: Debtor[]
+  page: number
+  pageSize: number
+  sortKey: DebtorTableSortKey
+  sortDir: "asc" | "desc"
+  onSort: (k: DebtorTableSortKey) => void
+  selection?: {
+    selectedIds: Set<string>
+    onToggle: (caseId: string) => void
+    onTogglePage: (ids: string[], select: boolean) => void
+    pageIds: string[]
+  }
+}
 
 export function DebtorTable({
   rows,
@@ -31,18 +47,24 @@ export function DebtorTable({
   sortKey,
   sortDir,
   onSort,
-}: {
-  rows: Debtor[]
-  page: number
-  pageSize: number
-  sortKey: SortKey
-  sortDir: "asc" | "desc"
-  onSort: (k: SortKey) => void
-}) {
+  selection,
+}: DebtorTableProps) {
   const navigate = useNavigate()
   const slice = rows.slice(page * pageSize, page * pageSize + pageSize)
 
-  const headBtn = (k: SortKey, label: string) => (
+  const headerCheckboxRef = React.useRef<HTMLInputElement>(null)
+  const pageIds = selection?.pageIds ?? []
+  const allPageSelected =
+    pageIds.length > 0 && pageIds.every((id) => selection?.selectedIds.has(id))
+  const somePageSelected = pageIds.some((id) => selection?.selectedIds.has(id))
+
+  React.useEffect(() => {
+    const el = headerCheckboxRef.current
+    if (!el) return
+    el.indeterminate = somePageSelected && !allPageSelected
+  }, [somePageSelected, allPageSelected])
+
+  const headBtn = (k: DebtorTableSortKey, label: string) => (
     <button
       type="button"
       className="inline-flex items-center gap-1 font-medium hover:text-foreground"
@@ -58,6 +80,20 @@ export function DebtorTable({
       <Table>
         <TableHeader>
           <TableRow>
+            {selection ? (
+              <TableHead className="w-10 pr-0">
+                <input
+                  ref={headerCheckboxRef}
+                  type="checkbox"
+                  className="size-4 cursor-pointer rounded border-input accent-primary"
+                  checked={allPageSelected}
+                  onChange={() =>
+                    selection.onTogglePage(pageIds, !allPageSelected)
+                  }
+                  aria-label="Select all on this page"
+                />
+              </TableHead>
+            ) : null}
             <TableHead className="font-mono text-xs">Case ID</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Country</TableHead>
@@ -71,6 +107,7 @@ export function DebtorTable({
         </TableHeader>
         <TableBody>
           {slice.map((d, index) => {
+            const isSelected = selection?.selectedIds.has(d.caseId) ?? false
             return (
               <TableRow
                 key={d.caseId}
@@ -79,11 +116,28 @@ export function DebtorTable({
                     "--vexor-stagger": `${index * 32}ms`,
                   } as React.CSSProperties
                 }
-                className="vexor-fade-up cursor-pointer"
+                className={cn(
+                  "vexor-fade-up cursor-pointer",
+                  isSelected && "bg-primary/5"
+                )}
                 onClick={() => {
                   navigate(`/debtors/${encodeURIComponent(d.caseId)}`)
                 }}
               >
+                {selection ? (
+                  <TableCell
+                    className="w-10 pr-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      className="size-4 cursor-pointer rounded border-input accent-primary"
+                      checked={isSelected}
+                      onChange={() => selection.onToggle(d.caseId)}
+                      aria-label={`Select ${d.name}`}
+                    />
+                  </TableCell>
+                ) : null}
                 <TableCell className="font-mono text-xs">{d.caseId}</TableCell>
                 <TableCell className="font-medium">{d.name}</TableCell>
                 <TableCell>{d.country}</TableCell>

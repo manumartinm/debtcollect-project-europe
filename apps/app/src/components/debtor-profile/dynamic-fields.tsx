@@ -1,3 +1,5 @@
+import { Sparkles } from "lucide-react"
+
 import { Button } from "@workspace/ui/components/button"
 import { Skeleton } from "@workspace/ui/components/skeleton"
 import { cn } from "@workspace/ui/lib/utils"
@@ -34,29 +36,29 @@ function EnrichedFieldBlock({
   const muted = value === "Not found" || value === "Unknown"
 
   return (
-    <div className="rounded-xl border border-border bg-card px-4 py-3">
+    <div className="relative rounded-xl border border-border bg-card px-4 py-3 pr-12">
+      {trace && onOpenTrace ? (
+        <button
+          type="button"
+          aria-label="Open agent trace for this field"
+          title="Open agent trace"
+          className="absolute right-2 top-2 inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+          onClick={() => onOpenTrace(trace)}
+        >
+          <Sparkles className="size-4" strokeWidth={1.75} />
+        </button>
+      ) : null}
       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
       <p
         className={cn(
-          "mt-1 text-sm",
+          "mt-1 pr-1 text-sm",
           muted ? "text-muted-foreground" : "text-foreground"
         )}
       >
         {value}
       </p>
-      {trace && onOpenTrace ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="mt-3 h-8 w-full border-primary/20 text-xs text-primary hover:bg-primary/5"
-          onClick={() => onOpenTrace(trace)}
-        >
-          View agent trace
-        </Button>
-      ) : null}
     </div>
   )
 }
@@ -118,7 +120,7 @@ export function DynamicFields({
       <div className="border-b border-border px-4 py-3">
         <h2 className="text-sm font-semibold text-foreground">Enriched signals</h2>
         <p className="mt-0.5 text-[12px] text-muted-foreground">
-          Opens the trace detail in a side panel (same as the timeline).
+          Sparkle icon opens the agent trace for that field.
         </p>
       </div>
       <div className="grid gap-3 p-4 sm:grid-cols-2">
