@@ -1,30 +1,20 @@
 import { useState, type SyntheticEvent } from "react"
-import { Link } from "react-router"
+import { Link, useNavigate } from "react-router"
 import { Button } from "@workspace/ui/components/button"
-import { signIn } from "@/lib/auth-client"
+import { useSignIn } from "@/hooks/use-auth"
 
 export default function SignInPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [message, setMessage] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
+  const signIn = useSignIn()
 
   async function onSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
-    setIsLoading(true)
-    setMessage("")
-
-    try {
-      const result = await signIn.email({ email, password })
-
-      if (result.error) {
-        setMessage(result.error.message ?? "Could not sign in")
-      }
-    } catch {
-      setMessage("Something went wrong")
-    } finally {
-      setIsLoading(false)
-    }
+    signIn.mutate(
+      { email, password },
+      { onSuccess: () => navigate("/") },
+    )
   }
 
   return (
@@ -58,13 +48,13 @@ export default function SignInPage() {
           />
         </label>
 
-        <Button disabled={isLoading} type="submit">
-          {isLoading ? "Please wait..." : "Sign in"}
+        <Button disabled={signIn.isPending} type="submit">
+          {signIn.isPending ? "Please wait..." : "Sign in"}
         </Button>
       </form>
 
-      {message ? (
-        <p className="text-sm text-muted-foreground">{message}</p>
+      {signIn.error ? (
+        <p className="text-sm text-destructive">{signIn.error.message}</p>
       ) : null}
 
       <p className="text-sm">

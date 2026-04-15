@@ -36,8 +36,9 @@ export function rowToDebtor(
   row: Record<string, string>,
   index: number
 ): Debtor | null {
-  const caseId =
-    pick(row, ["case_id", "caseid", "id", "case"]) || `IMPORT-${index}`
+  const caseRef =
+    pick(row, ["case_ref", "case_id", "caseid", "id", "case"]) ||
+    `IMPORT-${index}`
   const country = pick(row, ["country", "ctry"]) || "ES"
   const debtRaw = pick(row, [
     "debt_amount",
@@ -58,12 +59,18 @@ export function rowToDebtor(
   const legalOutcome =
     pick(row, ["legal_outcome", "legal", "asset_report"]) || "unknown"
   const name =
-    pick(row, ["name", "debtor", "full_name"]) || `Debtor ${caseId}`
+    pick(row, ["name", "debtor", "full_name"]) || `Debtor ${caseRef}`
 
-  const traceTemplate = buildDefaultTraceTemplate(caseId)
+  const traceTemplate = buildDefaultTraceTemplate(caseRef)
+
+  const debtorId =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `00000000-0000-4000-8000-${(index + 1).toString(16).padStart(12, "0")}`
 
   return {
-    caseId,
+    debtorId,
+    caseRef,
     country: country.slice(0, 2).toUpperCase(),
     debtAmount,
     callOutcome,
@@ -76,7 +83,7 @@ export function rowToDebtor(
     traceTemplate,
     statusHistory: [
       {
-        id: `${caseId}-import`,
+        id: `${caseRef}-import`,
         timestamp: new Date().toISOString(),
         status: "new",
         note: "Imported from CSV.",

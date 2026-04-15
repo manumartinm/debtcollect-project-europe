@@ -43,7 +43,10 @@ export type EnrichedFields = {
 }
 
 export type Debtor = {
-  caseId: string
+  /** UUID — used in app routes (`/debtors/:debtorId`) and API calls. */
+  debtorId: string
+  /** Business case reference (e.g. VX-0001); not the URL id. */
+  caseRef: string
   country: string
   debtAmount: number
   callOutcome: string
@@ -87,11 +90,11 @@ const LAST = [
   "Vega",
 ]
 
-export function buildDefaultTraceTemplate(caseId: string): AiTraceStep[] {
+export function buildDefaultTraceTemplate(caseRef: string): AiTraceStep[] {
   const base = new Date().toISOString()
   return [
     {
-      id: `${caseId}-s1`,
+      id: `${caseRef}-s1`,
       stepNumber: 1,
       agentName: "Search Agent",
       action: "queried",
@@ -107,7 +110,7 @@ export function buildDefaultTraceTemplate(caseId: string): AiTraceStep[] {
       durationMs: 2300,
     },
     {
-      id: `${caseId}-s2`,
+      id: `${caseRef}-s2`,
       stepNumber: 2,
       agentName: "Registry Agent",
       action: "cross-referenced",
@@ -126,7 +129,7 @@ export function buildDefaultTraceTemplate(caseId: string): AiTraceStep[] {
       durationMs: 4100,
     },
     {
-      id: `${caseId}-s3`,
+      id: `${caseRef}-s3`,
       stepNumber: 3,
       agentName: "Social Media Agent",
       action: "scraped",
@@ -146,7 +149,7 @@ export function buildDefaultTraceTemplate(caseId: string): AiTraceStep[] {
       durationMs: 1800,
     },
     {
-      id: `${caseId}-s4`,
+      id: `${caseRef}-s4`,
       stepNumber: 4,
       agentName: "Asset Agent",
       action: "queried",
@@ -161,7 +164,7 @@ export function buildDefaultTraceTemplate(caseId: string): AiTraceStep[] {
       durationMs: 3200,
     },
     {
-      id: `${caseId}-s5`,
+      id: `${caseRef}-s5`,
       stepNumber: 5,
       agentName: "Synthesis Agent",
       action: "concluded",
@@ -177,8 +180,8 @@ export function buildDefaultTraceTemplate(caseId: string): AiTraceStep[] {
   ]
 }
 
-export function traceTemplateWithNoResults(caseId: string): AiTraceStep[] {
-  const t = buildDefaultTraceTemplate(caseId)
+export function traceTemplateWithNoResults(caseRef: string): AiTraceStep[] {
+  const t = buildDefaultTraceTemplate(caseRef)
   return t.map((s, i) =>
     i < 4
       ? {
@@ -265,8 +268,14 @@ function randomDebt(i: number): number {
   return Math.floor((x - Math.floor(x)) * 199500) + 500
 }
 
+/** Deterministic UUID for mock rows (stable across reloads). */
+export function mockDebtorId(index: number): string {
+  const last = (index + 1).toString(16).padStart(12, "0")
+  return `00000000-0000-4000-8000-${last}`
+}
+
 function makeDebtor(i: number): Debtor {
-  const caseId = `VX-${String(i + 1).padStart(4, "0")}`
+  const caseRef = `VX-${String(i + 1).padStart(4, "0")}`
   const country = COUNTRIES[i % COUNTRIES.length]
   const name = `${FIRST[i % FIRST.length]} ${LAST[(i + 3) % LAST.length]}`
   const debtAmount = randomDebt(i + 1)
@@ -283,8 +292,8 @@ function makeDebtor(i: number): Debtor {
     ? "no_assets_listed"
     : ["vehicle_registered", "property_found"][i % 2]
 
-  const template = buildDefaultTraceTemplate(caseId)
-  const emptyTemplate = traceTemplateWithNoResults(caseId)
+  const template = buildDefaultTraceTemplate(caseRef)
+  const emptyTemplate = traceTemplateWithNoResults(caseRef)
 
   let enrichmentStatus: EnrichmentStatus
   let traces: AiTraceStep[]
@@ -330,7 +339,7 @@ function makeDebtor(i: number): Debtor {
 
   const statusHistory: StatusEvent[] = [
     {
-      id: `${caseId}-ev1`,
+      id: `${caseRef}-ev1`,
       timestamp: new Date(Date.now() - 86400000 * (3 + (i % 5))).toISOString(),
       status: "new",
       note: "Imported from portfolio CSV.",
@@ -339,7 +348,7 @@ function makeDebtor(i: number): Debtor {
   ]
   if (i % 3 === 0) {
     statusHistory.push({
-      id: `${caseId}-ev2`,
+      id: `${caseRef}-ev2`,
       timestamp: new Date(
         Date.now() - 86400000 * (1 + (i % 3))
       ).toISOString(),
@@ -361,7 +370,8 @@ function makeDebtor(i: number): Debtor {
   const caseStatus = caseStatuses[i % caseStatuses.length]
 
   return {
-    caseId,
+    debtorId: mockDebtorId(i),
+    caseRef,
     country,
     debtAmount,
     callOutcome,

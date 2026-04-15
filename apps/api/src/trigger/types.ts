@@ -77,7 +77,7 @@ export type AgentResult = {
 }
 
 export type DebtorAgentPayload = {
-  caseId: string
+  caseRef: string
   name: string
   state: string
   city?: string
@@ -87,7 +87,7 @@ export type DebtorAgentPayload = {
 }
 
 export type ResearchOrchestratorPayload = {
-  caseId: string
+  caseRef: string
   debtor: {
     name: string
     state: string
@@ -99,7 +99,7 @@ export type ResearchOrchestratorPayload = {
 }
 
 export type SynthesisInput = {
-  caseId: string
+  caseRef: string
   debtor: ResearchOrchestratorPayload["debtor"]
   agentResults: AgentResult[]
   planReasoning?: string

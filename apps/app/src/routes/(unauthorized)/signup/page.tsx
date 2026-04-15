@@ -1,31 +1,21 @@
 import { useState, type SyntheticEvent } from "react"
-import { Link } from "react-router"
+import { Link, useNavigate } from "react-router"
 import { Button } from "@workspace/ui/components/button"
-import { signUp } from "@/lib/auth-client"
+import { useSignUp } from "@/hooks/use-auth"
 
 export default function SignUpPage() {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [message, setMessage] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
+  const signUp = useSignUp()
 
   async function onSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
-    setIsLoading(true)
-    setMessage("")
-
-    try {
-      const result = await signUp.email({ name, email, password })
-
-      if (result.error) {
-        setMessage(result.error.message ?? "Could not create account")
-      }
-    } catch {
-      setMessage("Something went wrong")
-    } finally {
-      setIsLoading(false)
-    }
+    signUp.mutate(
+      { email, password, name },
+      { onSuccess: () => navigate("/") },
+    )
   }
 
   return (
@@ -69,13 +59,13 @@ export default function SignUpPage() {
           />
         </label>
 
-        <Button disabled={isLoading} type="submit">
-          {isLoading ? "Please wait..." : "Create account"}
+        <Button disabled={signUp.isPending} type="submit">
+          {signUp.isPending ? "Please wait..." : "Create account"}
         </Button>
       </form>
 
-      {message ? (
-        <p className="text-sm text-muted-foreground">{message}</p>
+      {signUp.error ? (
+        <p className="text-sm text-destructive">{signUp.error.message}</p>
       ) : null}
 
       <p className="text-sm">

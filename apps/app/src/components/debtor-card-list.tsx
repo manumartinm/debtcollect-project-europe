@@ -28,7 +28,7 @@ export function DebtorCardList({
   pageSize: number
   selection?: {
     selectedIds: Set<string>
-    onToggle: (caseId: string) => void
+    onToggle: (debtorId: string) => void
   }
 }) {
   const navigate = useNavigate()
@@ -37,9 +37,9 @@ export function DebtorCardList({
   return (
     <ul className="space-y-3">
       {slice.map((d, index) => {
-        const isSelected = selection?.selectedIds.has(d.caseId) ?? false
+        const isSelected = selection?.selectedIds.has(d.debtorId) ?? false
         return (
-          <li key={d.caseId}>
+          <li key={d.debtorId}>
             <Card
               role="button"
               tabIndex={0}
@@ -53,11 +53,11 @@ export function DebtorCardList({
                 isSelected && "ring-2 ring-primary/30 bg-primary/[0.03]"
               )}
               onClick={() =>
-                navigate(`/debtors/${encodeURIComponent(d.caseId)}`)
+                navigate(`/debtors/${encodeURIComponent(d.debtorId)}`)
               }
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ")
-                  navigate(`/debtors/${encodeURIComponent(d.caseId)}`)
+                  navigate(`/debtors/${encodeURIComponent(d.debtorId)}`)
               }}
             >
               <div className="flex items-start gap-3">
@@ -71,7 +71,7 @@ export function DebtorCardList({
                       type="checkbox"
                       className="size-4 cursor-pointer rounded border-input accent-primary"
                       checked={isSelected}
-                      onChange={() => selection.onToggle(d.caseId)}
+                      onChange={() => selection.onToggle(d.debtorId)}
                       aria-label={`Select ${d.name}`}
                     />
                   </div>
@@ -81,7 +81,7 @@ export function DebtorCardList({
                     <div className="min-w-0">
                       <p className="truncate font-medium text-foreground">{d.name}</p>
                       <p className="font-mono text-xs text-muted-foreground">
-                        {d.caseId} · {d.country}
+                        {d.caseRef} · {d.country}
                       </p>
                     </div>
                     <p className="shrink-0 text-sm font-semibold tabular-nums">

@@ -13,12 +13,12 @@ type DebtorsContextValue = {
   debtors: Debtor[]
   setDebtors: React.Dispatch<React.SetStateAction<Debtor[]>>
   upsertDebtor: (d: Debtor) => void
-  updateDebtor: (caseId: string, patch: Partial<Debtor>) => void
+  updateDebtor: (debtorId: string, patch: Partial<Debtor>) => void
   appendDebtorsFromImport: (rows: Debtor[]) => void
-  addStatusEvent: (caseId: string, event: StatusEvent) => void
-  setCaseStatus: (caseId: string, status: CaseStatus, note?: string) => void
+  addStatusEvent: (debtorId: string, event: StatusEvent) => void
+  setCaseStatus: (debtorId: string, status: CaseStatus, note?: string) => void
   runEnrichmentState: (
-    caseId: string,
+    debtorId: string,
     patch: Partial<Debtor> & {
       enrichmentStatus?: EnrichmentStatus
       traces?: Debtor["traces"]
@@ -33,7 +33,7 @@ export function DebtorsProvider({ children }: { children: React.ReactNode }) {
 
   const upsertDebtor = React.useCallback((d: Debtor) => {
     setDebtors((prev) => {
-      const i = prev.findIndex((x) => x.caseId === d.caseId)
+      const i = prev.findIndex((x) => x.debtorId === d.debtorId)
       if (i === -1) return [...prev, d]
       const next = [...prev]
       next[i] = d
@@ -41,22 +41,22 @@ export function DebtorsProvider({ children }: { children: React.ReactNode }) {
     })
   }, [])
 
-  const updateDebtor = React.useCallback((caseId: string, patch: Partial<Debtor>) => {
+  const updateDebtor = React.useCallback((debtorId: string, patch: Partial<Debtor>) => {
     setDebtors((prev) =>
-      prev.map((d) => (d.caseId === caseId ? { ...d, ...patch } : d))
+      prev.map((d) => (d.debtorId === debtorId ? { ...d, ...patch } : d))
     )
   }, [])
 
   const appendDebtorsFromImport = React.useCallback((rows: Debtor[]) => {
     setDebtors((prev) => {
-      const seen = new Set(prev.map((d) => d.caseId))
+      const seen = new Set(prev.map((d) => d.caseRef))
       const merged = [...prev]
       for (const r of rows) {
-        if (!seen.has(r.caseId)) {
-          seen.add(r.caseId)
+        if (!seen.has(r.caseRef)) {
+          seen.add(r.caseRef)
           merged.push(r)
         } else {
-          const i = merged.findIndex((d) => d.caseId === r.caseId)
+          const i = merged.findIndex((d) => d.caseRef === r.caseRef)
           if (i !== -1) merged[i] = { ...merged[i], ...r }
         }
       }
@@ -64,10 +64,10 @@ export function DebtorsProvider({ children }: { children: React.ReactNode }) {
     })
   }, [])
 
-  const addStatusEvent = React.useCallback((caseId: string, event: StatusEvent) => {
+  const addStatusEvent = React.useCallback((debtorId: string, event: StatusEvent) => {
     setDebtors((prev) =>
       prev.map((d) =>
-        d.caseId === caseId
+        d.debtorId === debtorId
           ? { ...d, statusHistory: [event, ...d.statusHistory] }
           : d
       )
@@ -75,9 +75,9 @@ export function DebtorsProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const setCaseStatus = React.useCallback(
-    (caseId: string, status: CaseStatus, note?: string) => {
+    (debtorId: string, status: CaseStatus, note?: string) => {
       const event: StatusEvent = {
-        id: `${caseId}-${Date.now()}`,
+        id: `${debtorId}-${Date.now()}`,
         timestamp: new Date().toISOString(),
         status,
         note,
@@ -85,7 +85,7 @@ export function DebtorsProvider({ children }: { children: React.ReactNode }) {
       }
       setDebtors((prev) =>
         prev.map((d) =>
-          d.caseId === caseId
+          d.debtorId === debtorId
             ? {
                 ...d,
                 caseStatus: status,
@@ -100,7 +100,7 @@ export function DebtorsProvider({ children }: { children: React.ReactNode }) {
 
   const runEnrichmentState = React.useCallback(
     (
-      caseId: string,
+      debtorId: string,
       patch: Partial<Debtor> & {
         enrichmentStatus?: EnrichmentStatus
         traces?: Debtor["traces"]
@@ -108,7 +108,7 @@ export function DebtorsProvider({ children }: { children: React.ReactNode }) {
     ) => {
       setDebtors((prev) =>
         prev.map((d) => {
-          if (d.caseId !== caseId) return d
+          if (d.debtorId !== debtorId) return d
           const nextTraces = patch.traces ?? d.traces
           const leverageScore =
             patch.leverageScore ??

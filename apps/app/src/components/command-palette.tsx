@@ -71,15 +71,15 @@ export function CommandPalette() {
         <CommandGroup heading="Debtors">
           {debtors.slice(0, 40).map((d) => (
             <CommandItem
-              key={d.caseId}
-              value={`${d.name} ${d.caseId}`}
-              onSelect={() => go(`/debtors/${encodeURIComponent(d.caseId)}`)}
+              key={d.debtorId}
+              value={`${d.name} ${d.caseRef} ${d.debtorId}`}
+              onSelect={() => go(`/debtors/${encodeURIComponent(d.debtorId)}`)}
               className="gap-2"
             >
               <Users className="size-4 shrink-0" />
               <span className="truncate">{d.name}</span>
               <span className="ml-auto font-mono text-xs text-muted-foreground">
-                {d.caseId}
+                {d.caseRef}
               </span>
             </CommandItem>
           ))}

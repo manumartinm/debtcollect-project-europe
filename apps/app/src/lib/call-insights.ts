@@ -21,7 +21,7 @@ export function buildCallInsightBlocks(debtor: Debtor): InsightBlock[] {
     title: "Account snapshot",
     points: [
       `Outstanding balance ${formatMoney(debtor.debtAmount)} · jurisdiction ${debtor.country}.`,
-      `Case ID ${debtor.caseId} — use when debtor asks for reference.`,
+      `Case ref ${debtor.caseRef} — use when debtor asks for reference.`,
       `Portfolio call outcome (CSV): ${debtor.callOutcome}.`,
       `Legal / asset line (CSV): ${debtor.legalOutcome}.`,
     ],

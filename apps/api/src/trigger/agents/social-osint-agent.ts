@@ -118,7 +118,7 @@ export const socialOsintAgent = task({
       )
     }
 
-    logger.log("social-osint-agent done", { caseId: payload.caseId })
+    logger.log("social-osint-agent done", { caseRef: payload.caseRef })
     return { trace, extractedFields, provenance }
   },
 })

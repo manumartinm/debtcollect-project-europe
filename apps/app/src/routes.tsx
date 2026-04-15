@@ -23,7 +23,7 @@ export function AppRoutes() {
               <Route index element={<DashboardPage />} />
               <Route path="upload" element={<UploadPage />} />
               <Route path="debtors" element={<DebtorsPage />} />
-              <Route path="debtors/:caseId" element={<DebtorProfilePage />} />
+              <Route path="debtors/:debtorId" element={<DebtorProfilePage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
           </Route>

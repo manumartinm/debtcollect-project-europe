@@ -90,7 +90,7 @@ export const businessEntityAgent = task({
       )
     }
 
-    logger.log("business-entity-agent done", { caseId: payload.caseId })
+    logger.log("business-entity-agent done", { caseRef: payload.caseRef })
     return { trace, extractedFields, provenance }
   },
 })

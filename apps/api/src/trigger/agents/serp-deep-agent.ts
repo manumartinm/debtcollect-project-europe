@@ -101,7 +101,7 @@ export const serpDeepAgent = task({
       )
     }
 
-    logger.log("serp-deep-agent done", { caseId: payload.caseId })
+    logger.log("serp-deep-agent done", { caseRef: payload.caseRef })
     return { trace, extractedFields, provenance }
   },
 })

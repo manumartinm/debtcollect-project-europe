@@ -57,8 +57,8 @@ const leadTabTriggerClass =
   "h-auto rounded-none border-0 bg-transparent px-2 py-1.5 text-[11px] font-medium text-muted-foreground shadow-none data-active:bg-transparent data-active:text-foreground data-active:shadow-none dark:data-active:bg-transparent sm:px-3 sm:text-xs"
 
 export default function DebtorProfilePage() {
-  const { caseId: raw } = useParams()
-  const caseId = raw ? decodeURIComponent(raw) : ""
+  const { debtorId: raw } = useParams()
+  const debtorIdParam = raw ? decodeURIComponent(raw) : ""
   const navigate = useNavigate()
   const { debtors, runEnrichmentState, setCaseStatus } = useDebtors()
   const lg = useMinLg()
@@ -70,12 +70,12 @@ export default function DebtorProfilePage() {
     setTraceSheetStep(step)
   }, [])
 
-  const debtor = debtors.find((d) => d.caseId === caseId)
+  const debtor = debtors.find((d) => d.debtorId === debtorIdParam)
 
   const startEnrichment = React.useCallback(() => {
     if (!debtor || debtor.enrichmentStatus !== "pending" || running) return
     const template = debtor.traceTemplate
-    runEnrichmentState(debtor.caseId, {
+    runEnrichmentState(debtor.debtorId, {
       enrichmentStatus: "running",
       traces: [],
     })
@@ -83,14 +83,14 @@ export default function DebtorProfilePage() {
     run(
       template,
       (partial) => {
-        runEnrichmentState(debtor.caseId, { traces: partial })
+        runEnrichmentState(debtor.debtorId, { traces: partial })
       },
       () => {
         const traces = template
         const enriched = buildEnrichedFromTraces(traces)
         const leverageScore = computeLeverageFromTraces(traces)
         const withFindings = traces.filter((t) => t.finding).length
-        runEnrichmentState(debtor.caseId, {
+        runEnrichmentState(debtor.debtorId, {
           enrichmentStatus: "complete",
           traces,
           enriched,
@@ -177,7 +177,7 @@ export default function DebtorProfilePage() {
       <StatusTimeline
         debtor={debtor}
         onStatusChange={(status: CaseStatus, note: string) =>
-          setCaseStatus(debtor.caseId, status, note || undefined)
+          setCaseStatus(debtor.debtorId, status, note || undefined)
         }
       />
     </div>
@@ -244,7 +244,7 @@ export default function DebtorProfilePage() {
             {debtor.name}
           </h1>
           <p className="font-mono text-xs text-muted-foreground">
-            {debtor.caseId}
+            {debtor.caseRef}
           </p>
           <dl className="mt-3 grid max-w-full grid-cols-2 gap-x-4 gap-y-2 border-b border-border pb-4 sm:grid-cols-4 lg:flex lg:flex-wrap lg:gap-x-8 lg:gap-y-2">
             <div className="min-w-0">

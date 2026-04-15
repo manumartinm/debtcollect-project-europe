@@ -120,7 +120,7 @@ export const synthesisAgent = task({
       fields: r.extractedFields,
     }))
 
-    const prompt = `Case ${input.caseId}. Debtor portfolio: ${JSON.stringify(input.debtor)}.
+    const prompt = `Case ${input.caseRef}. Debtor portfolio: ${JSON.stringify(input.debtor)}.
 
 Statute of limitations (written contract, informational): state ${input.debtor.state} -> ${solYears ?? "unknown"} years; estimated time-barred: ${sol.timeBarred}; expiration ISO: ${sol.expirationIso ?? "n/a"}.
 
@@ -146,7 +146,7 @@ Produce final synthesis: summary, key findings, leverage score, enrichment confi
           llm.fieldProvenance[k] = merged[k] as z.infer<typeof fieldProvSchema>
         }
       }
-      logger.log("synthesis-agent done", { caseId: input.caseId, ms: Date.now() - start })
+      logger.log("synthesis-agent done", { caseRef: input.caseRef, ms: Date.now() - start })
       return llm
     }
 
@@ -160,7 +160,7 @@ Produce final synthesis: summary, key findings, leverage score, enrichment confi
         talkingPoints: [
           {
             title: "Account snapshot",
-            points: [`Case ${input.caseId}`, `Debtor ${input.debtor.name}`],
+            points: [`Case ${input.caseRef}`, `Debtor ${input.debtor.name}`],
           },
         ],
         complianceAnchors: [

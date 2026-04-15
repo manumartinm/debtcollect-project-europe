@@ -90,7 +90,7 @@ export const bankruptcyAgent = task({
       )
     }
 
-    logger.log("bankruptcy-agent done", { caseId: payload.caseId })
+    logger.log("bankruptcy-agent done", { caseRef: payload.caseRef })
     return { trace, extractedFields, provenance }
   },
 })

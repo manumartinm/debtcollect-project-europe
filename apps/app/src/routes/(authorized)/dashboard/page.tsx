@@ -62,7 +62,11 @@ export default function DashboardPage() {
 
   const recent = debtors
     .flatMap((d) =>
-      d.statusHistory.map((e) => ({ ...e, caseId: d.caseId, name: d.name }))
+      d.statusHistory.map((e) => ({
+        ...e,
+        debtorId: d.debtorId,
+        name: d.name,
+      }))
     )
     .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
     .slice(0, 8)
@@ -209,7 +213,7 @@ export default function DashboardPage() {
                 <div className="min-w-0 flex-1">
                   <p>
                     <Link
-                      to={`/debtors/${encodeURIComponent(e.caseId)}`}
+                      to={`/debtors/${encodeURIComponent(e.debtorId)}`}
                       className="font-medium text-foreground hover:underline"
                     >
                       {e.name}

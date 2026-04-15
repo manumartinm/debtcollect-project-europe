@@ -90,7 +90,7 @@ export default function DebtorsPage() {
       const matchQ =
         !q.trim() ||
         d.name.toLowerCase().includes(q.toLowerCase()) ||
-        d.caseId.toLowerCase().includes(q.toLowerCase())
+        d.caseRef.toLowerCase().includes(q.toLowerCase())
       const matchS = status === "all" || d.caseStatus === status
       const matchC = country === "all" || d.country === country
       const matchE = enrich === "all" || d.enrichmentStatus === enrich
@@ -110,12 +110,12 @@ export default function DebtorsPage() {
     () =>
       sorted
         .slice(safePage * PAGE, safePage * PAGE + PAGE)
-        .map((d) => d.caseId),
+        .map((d) => d.debtorId),
     [sorted, safePage]
   )
 
   const selectedDebtors = React.useMemo(
-    () => debtors.filter((d) => selectedIds.has(d.caseId)),
+    () => debtors.filter((d) => selectedIds.has(d.debtorId)),
     [debtors, selectedIds]
   )
 
@@ -135,11 +135,11 @@ export default function DebtorsPage() {
     })
   }
 
-  const toggleSelect = React.useCallback((caseId: string) => {
+  const toggleSelect = React.useCallback((debtorId: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
-      if (next.has(caseId)) next.delete(caseId)
-      else next.add(caseId)
+      if (next.has(debtorId)) next.delete(debtorId)
+      else next.add(debtorId)
       return next
     })
   }, [])
@@ -158,8 +158,8 @@ export default function DebtorsPage() {
 
   const applyBulkStatus = React.useCallback(
     (st: CaseStatus) => {
-      selectedIds.forEach((id) => {
-        setCaseStatus(id, st, "Bulk update")
+      selectedIds.forEach((debtorId) => {
+        setCaseStatus(debtorId, st, "Bulk update")
       })
       setSelectedIds(new Set())
     },

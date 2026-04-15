@@ -1,16 +1,11 @@
 import { Navigate, Outlet } from "react-router"
-import { useSession } from "@/lib/auth-client"
+import { useAuthSession } from "@/hooks/use-auth"
 
 export default function Layout() {
-  const { data: session, isPending } = useSession()
+  const { data: session, isPending } = useAuthSession()
 
-  if (isPending) {
-    return null
-  }
-
-  if (session) {
-    return <Navigate to="/" replace />
-  }
+  if (isPending) return null
+  if (session) return <Navigate to="/" replace />
 
   return <Outlet />
 }

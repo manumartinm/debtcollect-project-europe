@@ -86,7 +86,7 @@ export const propertyAgent = task({
       )
     }
 
-    logger.log("property-agent done", { caseId: payload.caseId })
+    logger.log("property-agent done", { caseRef: payload.caseRef })
     return { trace, extractedFields, provenance }
   },
 })

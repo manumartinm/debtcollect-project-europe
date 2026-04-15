@@ -89,7 +89,7 @@ export const courtRecordsAgent = task({
       )
     }
 
-    logger.log("court-records-agent done", { caseId: payload.caseId })
+    logger.log("court-records-agent done", { caseRef: payload.caseRef })
     return { trace, extractedFields, provenance }
   },
 })

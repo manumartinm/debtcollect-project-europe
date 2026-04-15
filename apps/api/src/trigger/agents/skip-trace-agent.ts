@@ -119,7 +119,7 @@ export const skipTraceAgent = task({
       )
     }
 
-    logger.log("skip-trace-agent done", { caseId: payload.caseId, ms: Date.now() - start })
+    logger.log("skip-trace-agent done", { caseRef: payload.caseRef, ms: Date.now() - start })
 
     return { trace, extractedFields, provenance }
   },

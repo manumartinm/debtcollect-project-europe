@@ -28,7 +28,7 @@ function toPayload(
   overrides?: Record<string, unknown>
 ): DebtorAgentPayload {
   return {
-    caseId: p.caseId,
+    caseRef: p.caseRef,
     name: p.debtor.name,
     state: p.debtor.state,
     city: p.debtor.city,
@@ -74,7 +74,7 @@ Explain skipped agents in skipAgents.`,
       payload: toPayload(payload, step++),
     }))
 
-    logger.log("researchOrchestrator wave1", { caseId: payload.caseId, wave1 })
+    logger.log("researchOrchestrator wave1", { caseRef: payload.caseRef, wave1 })
     const w1 = await batch.triggerByTaskAndWait(wave1Jobs)
     const wave1Results = collectOutputs(w1.runs)
 
@@ -94,10 +94,10 @@ Explain skipped agents in skipAgents.`,
     if (replan?.abortRemaining) {
       logger.warn("Orchestrator abort after wave1", {
         reason: replan.abortReason,
-        caseId: payload.caseId,
+        caseRef: payload.caseRef,
       })
       const syn = await synthesisAgent.triggerAndWait({
-        caseId: payload.caseId,
+        caseRef: payload.caseRef,
         debtor: payload.debtor,
         agentResults: wave1Results,
         planReasoning: `${plan?.reasoning ?? ""}\nAbort: ${replan.abortReason ?? ""}`,
@@ -106,7 +106,7 @@ Explain skipped agents in skipAgents.`,
         throw new Error(String(syn.error ?? "synthesis failed"))
       }
       return {
-        caseId: payload.caseId,
+        caseRef: payload.caseRef,
         plan,
         replan,
         wave1Results,
@@ -140,13 +140,13 @@ Explain skipped agents in skipAgents.`,
       payload: toPayload(payload, step++, Object.keys(overrides).length ? overrides : undefined),
     }))
 
-    logger.log("researchOrchestrator wave2", { caseId: payload.caseId, wave2Ids })
+    logger.log("researchOrchestrator wave2", { caseRef: payload.caseRef, wave2Ids })
     const w2 = await batch.triggerByTaskAndWait(wave2Jobs)
     const wave2Results = collectOutputs(w2.runs)
     const allResults = [...wave1Results, ...wave2Results]
 
     const syn = await synthesisAgent.triggerAndWait({
-      caseId: payload.caseId,
+      caseRef: payload.caseRef,
       debtor: payload.debtor,
       agentResults: allResults,
       planReasoning: plan?.reasoning,
@@ -156,10 +156,10 @@ Explain skipped agents in skipAgents.`,
       throw new Error(String(syn.error ?? "synthesis failed"))
     }
 
-    logger.log("researchOrchestrator complete", { caseId: payload.caseId })
+    logger.log("researchOrchestrator complete", { caseRef: payload.caseRef })
 
     return {
-      caseId: payload.caseId,
+      caseRef: payload.caseRef,
       plan,
       replan,
       wave1Results,

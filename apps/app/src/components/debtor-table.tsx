@@ -34,7 +34,7 @@ export type DebtorTableProps = {
   onSort: (k: DebtorTableSortKey) => void
   selection?: {
     selectedIds: Set<string>
-    onToggle: (caseId: string) => void
+    onToggle: (debtorId: string) => void
     onTogglePage: (ids: string[], select: boolean) => void
     pageIds: string[]
   }
@@ -94,7 +94,7 @@ export function DebtorTable({
                 />
               </TableHead>
             ) : null}
-            <TableHead className="font-mono text-xs">Case ID</TableHead>
+            <TableHead className="font-mono text-xs">Case ref</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Country</TableHead>
             <TableHead>{headBtn("debtAmount", "Debt")}</TableHead>
@@ -107,10 +107,10 @@ export function DebtorTable({
         </TableHeader>
         <TableBody>
           {slice.map((d, index) => {
-            const isSelected = selection?.selectedIds.has(d.caseId) ?? false
+            const isSelected = selection?.selectedIds.has(d.debtorId) ?? false
             return (
               <TableRow
-                key={d.caseId}
+                key={d.debtorId}
                 style={
                   {
                     "--vexor-stagger": `${index * 32}ms`,
@@ -121,7 +121,7 @@ export function DebtorTable({
                   isSelected && "bg-primary/5"
                 )}
                 onClick={() => {
-                  navigate(`/debtors/${encodeURIComponent(d.caseId)}`)
+                  navigate(`/debtors/${encodeURIComponent(d.debtorId)}`)
                 }}
               >
                 {selection ? (
@@ -133,12 +133,12 @@ export function DebtorTable({
                       type="checkbox"
                       className="size-4 cursor-pointer rounded border-input accent-primary"
                       checked={isSelected}
-                      onChange={() => selection.onToggle(d.caseId)}
+                      onChange={() => selection.onToggle(d.debtorId)}
                       aria-label={`Select ${d.name}`}
                     />
                   </TableCell>
                 ) : null}
-                <TableCell className="font-mono text-xs">{d.caseId}</TableCell>
+                <TableCell className="font-mono text-xs">{d.caseRef}</TableCell>
                 <TableCell className="font-medium">{d.name}</TableCell>
                 <TableCell>{d.country}</TableCell>
                 <TableCell>{formatMoney(d.debtAmount)}</TableCell>

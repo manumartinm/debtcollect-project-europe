@@ -18,8 +18,8 @@ export function FixedFields({ debtor }: { debtor: Debtor }) {
       </CardHeader>
       <CardContent className="grid gap-3 sm:grid-cols-2">
         <div>
-          <p className="text-xs text-muted-foreground">Case ID</p>
-          <p className="font-mono text-sm font-medium">{debtor.caseId}</p>
+          <p className="text-xs text-muted-foreground">Case ref</p>
+          <p className="font-mono text-sm font-medium">{debtor.caseRef}</p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Country</p>

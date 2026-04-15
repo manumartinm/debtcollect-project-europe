@@ -12,7 +12,7 @@ function escapeCell(v: string) {
 function buildCsv(debtors: Debtor[]) {
   const enriched = debtors.filter((d) => d.enrichmentStatus === "complete")
   const headers = [
-    "case_id",
+    "case_ref",
     "country",
     "debt_amount",
     "call_outcome",
@@ -32,7 +32,7 @@ function buildCsv(debtors: Debtor[]) {
       .flatMap((t) => t.sources.map((s) => s.url))
       .join(" | ")
     const row = [
-      d.caseId,
+      d.caseRef,
       d.country,
       String(d.debtAmount),
       d.callOutcome,
