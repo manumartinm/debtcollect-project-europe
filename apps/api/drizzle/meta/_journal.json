@@ -8,6 +8,13 @@
       "when": 1776284253708,
       "tag": "0000_handy_sway",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776294673306,
+      "tag": "0001_skinny_squadron_supreme",
+      "breakpoints": true
     }
   ]
 }
