@@ -12,7 +12,9 @@
     "db:check": "drizzle-kit check"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.53",
     "@hono/node-server": "^1.19.14",
+    "ai": "^6.0.161",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.14",
