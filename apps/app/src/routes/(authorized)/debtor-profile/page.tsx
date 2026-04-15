@@ -12,7 +12,6 @@ import {
 } from "@workspace/ui/components/tabs"
 import { cn } from "@workspace/ui/lib/utils"
 
-import { AgentTimeline } from "@/components/debtor-profile/agent-timeline"
 import { CallInsights } from "@/components/debtor-profile/call-insights"
 import { DynamicFields } from "@/components/debtor-profile/dynamic-fields"
 import { TraceStepDetail } from "@/components/debtor-profile/trace-step-detail"
@@ -21,9 +20,8 @@ import { LeverageIndicator } from "@/components/debtor-profile/leverage-indicato
 import { StatusTimeline } from "@/components/debtor-profile/status-timeline"
 import type { ApiTraceStep } from "@/lib/api"
 import { useSession } from "@/lib/auth-client"
-import { flattenTraceSteps, parseDebtAmountString } from "@/lib/debtor-traces"
+import { parseDebtAmountString } from "@/lib/debtor-traces"
 import { useDebtor, useSetDebtorStatus } from "@/hooks/use-debtors-queries"
-import { useMinLg } from "@/hooks/use-media"
 import {
   Sheet,
   SheetContent,
@@ -56,7 +54,6 @@ export default function DebtorProfilePage() {
   const { debtorId: raw } = useParams()
   const debtorIdParam = raw ? decodeURIComponent(raw) : ""
   const navigate = useNavigate()
-  const lg = useMinLg()
   const { data: session } = useSession()
   const author = session?.user?.name ?? "Collector"
 
@@ -105,7 +102,7 @@ export default function DebtorProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4 text-center text-muted-foreground">
+      <div className="mx-auto w-full max-w-4xl space-y-4 pt-1 text-center text-muted-foreground">
         Loading case…
       </div>
     )
@@ -113,7 +110,7 @@ export default function DebtorProfilePage() {
 
   if (isError || !debtor) {
     return (
-      <div className="space-y-4 text-center">
+      <div className="mx-auto w-full max-w-4xl space-y-4 pt-1 text-center">
         <p className="text-muted-foreground">
           {isError
             ? (error as Error)?.message ?? "Could not load case."
@@ -129,37 +126,8 @@ export default function DebtorProfilePage() {
     )
   }
 
-  const traces = flattenTraceSteps(debtor)
   const lev = debtor.leverageScore as LeverageLevel
   const enrichSt = debtor.enrichmentStatus as EnrichmentStatus
-
-  const tracePanel = (
-    <AgentTimeline
-      steps={traces}
-      emptyMessage={
-        enrichSt === "pending"
-          ? "No enrichment data yet — traces appear when enrichment completes."
-          : undefined
-      }
-      onOpenStep={openTraceDetail}
-    />
-  )
-
-  const traceSidebar = (
-    <aside className="min-w-0 rounded-xl border border-border bg-card p-4 lg:border-0 lg:bg-transparent lg:p-0">
-      <div className="sticky top-20 space-y-3">
-        <h2 className="text-sm font-semibold tracking-tight text-foreground">
-          AI agent trace
-        </h2>
-        <p className="hidden text-[11px] leading-snug text-muted-foreground lg:block">
-          Pipeline steps. Use{" "}
-          <span className="font-medium">Open trace details</span> or field
-          sparkles for the full step.
-        </p>
-        {tracePanel}
-      </div>
-    </aside>
-  )
 
   const fieldsColumn = (
     <div className="space-y-6">
@@ -213,7 +181,7 @@ export default function DebtorProfilePage() {
   )
 
   return (
-    <div className="w-full min-w-0 space-y-6 pt-1 pb-24 lg:pb-8">
+    <div className="mx-auto w-full min-w-0 max-w-4xl space-y-6 pt-1 pb-24 lg:pb-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 space-y-1">
           <Link
@@ -273,41 +241,7 @@ export default function DebtorProfilePage() {
         </div>
       </div>
 
-      {!lg ? (
-        <Tabs defaultValue="insights" className="w-full min-w-0">
-          <TabsList
-            variant="line"
-            className="mb-0 h-auto w-full min-w-0 justify-start gap-2 border-b border-border bg-transparent p-0 shadow-none sm:gap-5"
-          >
-            <TabsTrigger
-              value="insights"
-              className={cn(leadTabTriggerClass, "data-active:font-semibold")}
-            >
-              Insights
-            </TabsTrigger>
-            <TabsTrigger value="fields" className={leadTabTriggerClass}>
-              Fields
-            </TabsTrigger>
-            <TabsTrigger value="trace" className={leadTabTriggerClass}>
-              Trace
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="insights" className="mt-4 min-w-0">
-            {insightsColumn}
-          </TabsContent>
-          <TabsContent value="fields" className="mt-4 min-w-0">
-            {fieldsColumn}
-          </TabsContent>
-          <TabsContent value="trace" className="mt-4 min-w-0">
-            {traceSidebar}
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <div className="grid w-full min-w-0 gap-8 lg:grid-cols-5 lg:gap-10">
-          <div className="min-w-0 space-y-0 lg:col-span-3">{leadTabs}</div>
-          <div className="min-w-0 lg:col-span-2">{traceSidebar}</div>
-        </div>
-      )}
+      <div className="w-full min-w-0">{leadTabs}</div>
 
       <Sheet
         open={traceSheetStep !== null}

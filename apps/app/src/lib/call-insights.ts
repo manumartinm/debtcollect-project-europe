@@ -1,5 +1,9 @@
 import type { ApiDebtor } from "@/lib/api"
-import { enrichedFieldValue, parseDebtAmountString } from "@/lib/debtor-traces"
+import {
+  enrichedFieldValue,
+  flattenTraceSteps,
+  parseDebtAmountString,
+} from "@/lib/debtor-traces"
 import { leverageExplanation } from "@/lib/leverage"
 import type { LeverageLevel } from "@/types/debtor"
 
@@ -88,15 +92,59 @@ export function buildCallInsightBlocks(debtor: ApiDebtor): InsightBlock[] {
 
   blocks.push({
     title: "Key points on the call",
-    points: [
-      "State who you represent and why you are calling; offer a written summary if requested.",
-      "Anchor on balance and options (plan, settlement window) — avoid speculative threats.",
-      "If the debtor disputes the debt: log details and follow your dispute workflow.",
-      "End with a clear next step (callback time, email, or payment link) and compliance disclaimer as required.",
-    ],
+    points: buildKeyPointsOnCall(debtor),
   })
 
   return blocks
+}
+
+/**
+ * Real talking points only: enrichment trace findings, then status notes.
+ * No generic placeholder copy.
+ */
+function buildKeyPointsOnCall(debtor: ApiDebtor): string[] {
+  const points: string[] = []
+  const seen = new Set<string>()
+
+  const add = (s: string) => {
+    const t = s.trim()
+    if (!t || seen.has(t)) return
+    seen.add(t)
+    points.push(t)
+  }
+
+  const steps = flattenTraceSteps(debtor)
+  for (const step of steps) {
+    if (step.finding?.trim()) {
+      add(step.finding.trim())
+    }
+  }
+
+  const events = [...(debtor.statusEvents ?? [])].sort((a, b) =>
+    b.occurredAt.localeCompare(a.occurredAt),
+  )
+  for (const ev of events.slice(0, 6)) {
+    if (ev.note?.trim()) {
+      const date = new Date(ev.occurredAt).toLocaleString()
+      add(`[${ev.status}] ${date} — ${ev.note.trim()} (${ev.author})`)
+    }
+  }
+
+  if (points.length === 0) {
+    for (const step of steps) {
+      if (step.reasoning?.trim() && step.reasoning.length <= 500) {
+        add(`${step.agentName}: ${step.reasoning.trim()}`)
+      }
+    }
+  }
+
+  if (points.length === 0) {
+    return [
+      "No enrichment findings or collector notes yet. Key points will appear here after agents write findings or you add status notes.",
+    ]
+  }
+
+  return points.slice(0, 14)
 }
 
 function postureLine(score: LeverageLevel): string {
@@ -111,3 +159,4 @@ function postureLine(score: LeverageLevel): string {
       return "Posture: neutral — focus on balance clarity and lawful options; acknowledge information gaps."
   }
 }
+
