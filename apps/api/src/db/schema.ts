@@ -126,7 +126,7 @@ export const debtors = pgTable(
   'debtors',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    caseRef: text('case_ref').notNull().unique(),
+    caseRef: text('case_ref').notNull(),
     orgId: uuid('org_id')
       .notNull()
       .references(() => organizations.id, { onDelete: 'cascade' }),
@@ -137,13 +137,14 @@ export const debtors = pgTable(
     callOutcome: text('call_outcome').notNull().default('unknown'),
     legalOutcome: text('legal_outcome').notNull().default('unknown'),
     caseStatus: text('case_status').notNull().default('new'),
-    enrichmentStatus: text('enrichment_status').notNull().default('pending'),
+    enrichmentStatus: text('enrichment_status').notNull().default('not_started'),
     enrichmentConfidence: real('enrichment_confidence'),
     leverageScore: text('leverage_score').notNull().default('none'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    unique('debtors_org_case_ref_unique').on(t.orgId, t.caseRef),
     index('debtors_org_status_idx').on(t.orgId, t.caseStatus),
     index('debtors_org_country_idx').on(t.orgId, t.country),
     index('debtors_org_enrichment_idx').on(t.orgId, t.enrichmentStatus),
@@ -153,7 +154,7 @@ export const debtors = pgTable(
     ),
     check(
       'debtors_enrichment_status_check',
-      sql`${t.enrichmentStatus} IN ('pending', 'running', 'complete', 'failed')`,
+      sql`${t.enrichmentStatus} IN ('not_started', 'pending', 'running', 'complete', 'failed')`,
     ),
     check(
       'debtors_leverage_check',

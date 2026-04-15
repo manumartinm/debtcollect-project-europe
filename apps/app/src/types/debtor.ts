@@ -1,5 +1,10 @@
 export type LeverageLevel = "none" | "low" | "medium" | "high"
-export type EnrichmentStatus = "pending" | "running" | "complete" | "failed"
+export type EnrichmentStatus =
+  | "not_started"
+  | "pending"
+  | "running"
+  | "complete"
+  | "failed"
 export type CaseStatus =
   | "new"
   | "reviewing"

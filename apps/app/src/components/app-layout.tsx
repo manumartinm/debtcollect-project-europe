@@ -87,12 +87,12 @@ export function AppLayout() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="gap-2"
-              onSelect={() => navigate("/settings")}
+              onClick={() => navigate("/settings")}
             >
               <User className="size-4 opacity-70" />
               Account
             </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2" onSelect={handleSignOut}>
+            <DropdownMenuItem className="gap-2" onClick={handleSignOut}>
               <LogOut className="size-4 opacity-70" />
               Sign out
             </DropdownMenuItem>

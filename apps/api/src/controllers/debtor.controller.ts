@@ -1,9 +1,28 @@
 import type { Context } from 'hono'
+import { triggerResearchOrchestrator } from '../lib/enrich-trigger.js'
 import {
   DebtorModel,
   StatusEventModel,
   EnrichedFieldModel,
 } from '../models/debtor.model.js'
+import type { ResearchOrchestratorPayload } from '../trigger/types.js'
+
+function toResearchPayload(d: {
+  caseRef: string
+  debtorName: string
+  country: string
+  debtAmount: string
+}): ResearchOrchestratorPayload {
+  const n = Number.parseFloat(d.debtAmount)
+  return {
+    caseRef: d.caseRef,
+    debtor: {
+      name: d.debtorName,
+      state: d.country,
+      debtAmount: Number.isFinite(n) ? n : undefined,
+    },
+  }
+}
 
 function paramId(c: Context): string {
   return c.req.param('id')!
@@ -74,6 +93,68 @@ export class DebtorController {
     const row = await DebtorModel.delete(paramId(c))
     if (!row) return c.json({ error: 'Not found' }, 404)
     return c.json({ deleted: true })
+  }
+
+  /** POST /:id/enrich — start enrichment pipeline (manual). */
+  static async startEnrich(c: Context) {
+    const id = paramId(c)
+    const debtor = await DebtorModel.findById(id)
+    if (!debtor) return c.json({ error: 'Not found' }, 404)
+    if (debtor.enrichmentStatus === 'running') {
+      return c.json({ error: 'Enrichment already running' }, 409)
+    }
+
+    await DebtorModel.update(id, { enrichmentStatus: 'running' })
+
+    try {
+      const run = await triggerResearchOrchestrator(toResearchPayload(debtor))
+      const fresh = await DebtorModel.findById(id)
+      return c.json({ runId: run.id, debtor: fresh })
+    } catch (e) {
+      await DebtorModel.update(id, { enrichmentStatus: 'failed' })
+      const msg = e instanceof Error ? e.message : String(e)
+      return c.json({ error: `Failed to start enrichment: ${msg}` }, 500)
+    }
+  }
+
+  /** POST /enrich-batch — start enrichment for many debtors (manual). */
+  static async enrichBatch(c: Context) {
+    const body = await c.req.json()
+    const debtorIds: unknown = body?.debtorIds
+    if (!Array.isArray(debtorIds) || debtorIds.length === 0) {
+      return c.json({ error: 'debtorIds[] required' }, 400)
+    }
+
+    const started: string[] = []
+    const skipped: string[] = []
+    const errors: Array<{ id: string; error: string }> = []
+
+    for (const raw of debtorIds) {
+      const id = typeof raw === 'string' ? raw : ''
+      if (!id) continue
+
+      const debtor = await DebtorModel.findById(id)
+      if (!debtor) {
+        errors.push({ id, error: 'Not found' })
+        continue
+      }
+      if (debtor.enrichmentStatus === 'running') {
+        skipped.push(id)
+        continue
+      }
+
+      await DebtorModel.update(id, { enrichmentStatus: 'running' })
+      try {
+        await triggerResearchOrchestrator(toResearchPayload(debtor))
+        started.push(id)
+      } catch (e) {
+        await DebtorModel.update(id, { enrichmentStatus: 'failed' })
+        const msg = e instanceof Error ? e.message : String(e)
+        errors.push({ id, error: msg })
+      }
+    }
+
+    return c.json({ started: started.length, skipped, errors })
   }
 }
 

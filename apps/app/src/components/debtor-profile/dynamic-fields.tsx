@@ -80,6 +80,17 @@ export function DynamicFields({
   onOpenTrace?: (step: ApiTraceStep) => void
 }) {
   const st = debtor.enrichmentStatus as EnrichmentStatus
+
+  if (st === "not_started") {
+    return (
+      <section className="rounded-xl border border-dashed border-border bg-card/50 px-4 py-6 text-center">
+        <p className="text-sm text-muted-foreground">
+          Enriched signals appear after you run enrichment for this case.
+        </p>
+      </section>
+    )
+  }
+
   const loading = st === "pending" || st === "running"
 
   if (loading) {

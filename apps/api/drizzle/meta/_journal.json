@@ -15,6 +15,20 @@
       "when": 1776294673306,
       "tag": "0001_skinny_squadron_supreme",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776305000000,
+      "tag": "0002_dashing_frightful_four",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1776296460352,
+      "tag": "0003_bitter_annihilus",
+      "breakpoints": true
     }
   ]
 }

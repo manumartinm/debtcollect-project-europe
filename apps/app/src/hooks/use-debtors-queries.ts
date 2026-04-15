@@ -113,6 +113,27 @@ export function useSetDebtorStatus() {
   })
 }
 
+export function useEnrichDebtor() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => debtorsApi.enrich(id),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: queryKeys.debtors.detail(id) })
+      qc.invalidateQueries({ queryKey: queryKeys.debtors.all })
+    },
+  })
+}
+
+export function useEnrichDebtorsBatch() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (debtorIds: string[]) => debtorsApi.enrichBatch(debtorIds),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.debtors.all })
+    },
+  })
+}
+
 export function useUpsertEnrichedField() {
   const qc = useQueryClient()
   return useMutation({

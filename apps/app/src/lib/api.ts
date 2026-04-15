@@ -23,10 +23,29 @@ async function request<T>(
     body: options?.body ? JSON.stringify(options.body) : undefined,
   })
 
-  const body = await response.json()
+  const raw = await response.text()
+  let body: unknown = null
+  if (raw.length > 0) {
+    const t = raw.trim()
+    if (t.startsWith("{") || t.startsWith("[")) {
+      try {
+        body = JSON.parse(raw) as unknown
+      } catch {
+        /* non-JSON despite brace — treat as text below on error */
+      }
+    }
+  }
 
   if (!response.ok) {
-    throw new Error(body.error || body.message || String(response.status))
+    let msg = `Request failed (${response.status})`
+    if (body && typeof body === "object") {
+      const o = body as Record<string, unknown>
+      if (typeof o.error === "string") msg = o.error
+      else if (typeof o.message === "string") msg = o.message
+    } else if (raw.trim()) {
+      msg = raw.trim().slice(0, 500)
+    }
+    throw new Error(msg)
   }
 
   return body as T
@@ -172,6 +191,21 @@ export const debtorsApi = {
     }>
   }) {
     return api.post<{ imported: number }>("/api/debtors/bulk", { body: data })
+  },
+
+  /** Manual enrichment — starts Trigger.dev research pipeline. */
+  enrich(id: string) {
+    return api.post<{ runId: string; debtor: ApiDebtor }>(
+      `/api/debtors/${encodeURIComponent(id)}/enrich`,
+    )
+  },
+
+  enrichBatch(debtorIds: string[]) {
+    return api.post<{
+      started: number
+      skipped: string[]
+      errors: Array<{ id: string; error: string }>
+    }>("/api/debtors/enrich-batch", { body: { debtorIds } })
   },
 
   update(

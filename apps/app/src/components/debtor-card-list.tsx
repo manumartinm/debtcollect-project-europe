@@ -7,6 +7,7 @@ import { cn } from "@workspace/ui/lib/utils"
 
 import { LeverageBadge } from "@/components/leverage-badge"
 import type { ApiDebtor } from "@/lib/api"
+import { ENRICHMENT_STATUS_LABEL } from "@/lib/enrichment-labels"
 import { parseDebtAmountString } from "@/lib/debtor-traces"
 import type { CaseStatus, LeverageLevel } from "@/types/debtor"
 import { CASE_STATUS_LABELS } from "@/types/debtor"
@@ -94,7 +95,16 @@ export function DebtorCardList({
                     <Badge variant="outline" className="font-normal">
                       {CASE_STATUS_LABELS[d.caseStatus as CaseStatus]}
                     </Badge>
-                    <LeverageBadge score={d.leverageScore as LeverageLevel} />
+                    <Badge variant="secondary" className="font-normal text-xs">
+                      {ENRICHMENT_STATUS_LABEL[
+                        d.enrichmentStatus as keyof typeof ENRICHMENT_STATUS_LABEL
+                      ] ?? d.enrichmentStatus}
+                    </Badge>
+                    {d.enrichmentStatus === "not_started" ? (
+                      <span className="text-xs text-muted-foreground">Leverage —</span>
+                    ) : (
+                      <LeverageBadge score={d.leverageScore as LeverageLevel} />
+                    )}
                   </div>
                 </div>
               </div>

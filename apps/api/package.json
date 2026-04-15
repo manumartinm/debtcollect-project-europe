@@ -7,7 +7,7 @@
     "start": "node dist/index.js",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "node ./scripts/db-migrate.mjs",
     "db:studio": "drizzle-kit studio",
     "db:check": "drizzle-kit check",
     "trigger:dev": "trigger.dev dev",

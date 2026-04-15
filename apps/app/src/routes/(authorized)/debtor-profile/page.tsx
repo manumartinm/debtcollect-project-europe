@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router"
 import { toast } from "sonner"
 
 import { Badge } from "@workspace/ui/components/badge"
-import { buttonVariants } from "@workspace/ui/components/button"
+import { Button, buttonVariants } from "@workspace/ui/components/button"
 import {
   Tabs,
   TabsContent,
@@ -21,18 +21,23 @@ import { StatusTimeline } from "@/components/debtor-profile/status-timeline"
 import type { ApiTraceStep } from "@/lib/api"
 import { useSession } from "@/lib/auth-client"
 import { parseDebtAmountString } from "@/lib/debtor-traces"
-import { useDebtor, useSetDebtorStatus } from "@/hooks/use-debtors-queries"
+import {
+  useDebtor,
+  useEnrichDebtor,
+  useSetDebtorStatus,
+} from "@/hooks/use-debtors-queries"
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@workspace/ui/components/sheet"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Sparkles } from "lucide-react"
 import type { CaseStatus, EnrichmentStatus, LeverageLevel } from "@/types/debtor"
 import { CASE_STATUS_LABELS } from "@/types/debtor"
 
 const ENRICH_LABELS: Record<EnrichmentStatus, string> = {
+  not_started: "Not started",
   pending: "Pending",
   running: "Running",
   complete: "Complete",
@@ -59,6 +64,7 @@ export default function DebtorProfilePage() {
 
   const { data: debtor, isLoading, isError, error } = useDebtor(debtorIdParam)
   const setStatusMutation = useSetDebtorStatus()
+  const enrichMutation = useEnrichDebtor()
 
   const [traceSheetStep, setTraceSheetStep] =
     React.useState<ApiTraceStep | null>(null)
@@ -128,6 +134,7 @@ export default function DebtorProfilePage() {
 
   const lev = debtor.leverageScore as LeverageLevel
   const enrichSt = debtor.enrichmentStatus as EnrichmentStatus
+  const isMinimalProfile = enrichSt === "not_started"
 
   const fieldsColumn = (
     <div className="space-y-6">
@@ -179,6 +186,21 @@ export default function DebtorProfilePage() {
       </TabsContent>
     </Tabs>
   )
+
+  const minimalBody = (
+    <div className="space-y-6">
+      <FixedFields debtor={debtor} />
+      <StatusTimeline debtor={debtor} onStatusChange={handleStatusChange} />
+      <p className="text-sm leading-relaxed text-muted-foreground">
+        Enrichment is off until you run it. You can still update case status and
+        notes above. Start enrichment to load signals, leverage, and call
+        insights.
+      </p>
+    </div>
+  )
+
+  const canRunEnrich =
+    enrichSt === "not_started" || enrichSt === "failed"
 
   return (
     <div className="mx-auto w-full min-w-0 max-w-4xl space-y-6 pt-1 pb-24 lg:pb-8">
@@ -239,9 +261,37 @@ export default function DebtorProfilePage() {
             </div>
           </dl>
         </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {canRunEnrich ? (
+            <Button
+              type="button"
+              size="sm"
+              className="gap-2"
+              disabled={enrichMutation.isPending}
+              onClick={() => {
+                enrichMutation.mutate(debtor.id, {
+                  onSuccess: () =>
+                    toast.success("Enrichment started — this may take a few minutes."),
+                  onError: (e) =>
+                    toast.error(e instanceof Error ? e.message : "Could not start enrichment"),
+                })
+              }}
+            >
+              <Sparkles className="size-4" strokeWidth={1.75} />
+              {enrichSt === "failed" ? "Retry enrichment" : "Run enrichment"}
+            </Button>
+          ) : null}
+          {enrichSt === "running" ? (
+            <span className="text-xs text-muted-foreground">
+              Enrichment in progress…
+            </span>
+          ) : null}
+        </div>
       </div>
 
-      <div className="w-full min-w-0">{leadTabs}</div>
+      <div className="w-full min-w-0">
+        {isMinimalProfile ? minimalBody : leadTabs}
+      </div>
 
       <Sheet
         open={traceSheetStep !== null}

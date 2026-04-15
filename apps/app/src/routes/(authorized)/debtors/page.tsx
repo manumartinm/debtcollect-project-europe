@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Link, useNavigate } from "react-router"
+import { toast } from "sonner"
 
 import { Button, buttonVariants } from "@workspace/ui/components/button"
 import { Input } from "@workspace/ui/components/input"
@@ -19,21 +20,30 @@ import { EmptyState } from "@/components/empty-state"
 import { ExportButton } from "@/components/export-button"
 import { useOrg } from "@/context/org-context"
 import type { ApiDebtor } from "@/lib/api"
+import { ENRICHMENT_STATUS_LABEL } from "@/lib/enrichment-labels"
 import { useSession } from "@/lib/auth-client"
 import { parseDebtAmountString } from "@/lib/debtor-traces"
 import {
   useDebtorsList,
+  useEnrichDebtorsBatch,
   useSetDebtorStatus,
 } from "@/hooks/use-debtors-queries"
 import type { CaseStatus } from "@/types/debtor"
 import { CASE_STATUS_LABELS } from "@/types/debtor"
 import { useMinLg } from "@/hooks/use-media"
-import { Search, Upload } from "lucide-react"
+import { Search, Sparkles, Upload } from "lucide-react"
 
 const PAGE = 15
 
 const COUNTRIES = ["all", "ES", "PT", "IT", "GR"] as const
-const ENRICH = ["all", "pending", "complete", "failed"] as const
+const ENRICH = [
+  "all",
+  "not_started",
+  "pending",
+  "running",
+  "complete",
+  "failed",
+] as const
 type SortKey = "debtAmount" | "caseStatus" | "none"
 
 function sortRows(
@@ -96,6 +106,7 @@ export default function DebtorsPage() {
     error,
   } = useDebtorsList(orgId ?? "")
   const setStatusMutation = useSetDebtorStatus()
+  const enrichBatchMutation = useEnrichDebtorsBatch()
   const navigate = useNavigate()
   const lg = useMinLg()
 
@@ -137,11 +148,6 @@ export default function DebtorsPage() {
         .slice(safePage * PAGE, safePage * PAGE + PAGE)
         .map((d) => d.id),
     [sorted, safePage]
-  )
-
-  const selectedDebtors = React.useMemo(
-    () => debtors.filter((d) => selectedIds.has(d.id)),
-    [debtors, selectedIds]
   )
 
   React.useEffect(() => {
@@ -358,7 +364,11 @@ export default function DebtorsPage() {
           >
             {ENRICH.map((c) => (
               <SelectItem key={c} value={c}>
-                {c === "all" ? "All" : c}
+                {c === "all"
+                  ? "All"
+                  : ENRICHMENT_STATUS_LABEL[
+                      c as keyof typeof ENRICHMENT_STATUS_LABEL
+                    ] ?? c}
               </SelectItem>
             ))}
           </FilterSelect>
@@ -384,51 +394,98 @@ export default function DebtorsPage() {
 
       {selectedIds.size > 0 ? (
         <div
-          className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2.5"
+          className="rounded-lg border border-primary/25 bg-primary/5 px-4 py-4"
           role="region"
           aria-label="Bulk actions"
         >
-          <span className="text-sm font-medium text-foreground">
-            {selectedIds.size} selected
-          </span>
-          <div className="mx-1 hidden h-6 w-px bg-border sm:block" />
-          <div className="flex min-w-40 flex-1 flex-col gap-1 sm:max-w-xs sm:flex-none">
-            <Label
-              htmlFor="bulk-status"
-              className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase"
-            >
-              Set status
-            </Label>
-            <Select
-              onValueChange={(v) => {
-                if (v) applyBulkStatus(v as CaseStatus)
-              }}
-            >
-              <SelectTrigger
-                id="bulk-status"
-                className="h-9 bg-background text-xs"
+          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-6 sm:gap-y-3">
+            <p className="text-sm font-semibold text-foreground sm:shrink-0 sm:pb-0.5">
+              {selectedIds.size} selected
+            </p>
+
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-[16rem]">
+              <Label
+                htmlFor="bulk-status"
+                className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase"
               >
-                <SelectValue placeholder="Choose status…" />
-              </SelectTrigger>
-              <SelectContent>
-                {(Object.keys(CASE_STATUS_LABELS) as CaseStatus[]).map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {CASE_STATUS_LABELS[s]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                Set case status
+              </Label>
+              <Select
+                onValueChange={(v) => {
+                  if (v) applyBulkStatus(v as CaseStatus)
+                }}
+              >
+                <SelectTrigger
+                  id="bulk-status"
+                  className="h-10 w-full bg-background text-sm"
+                >
+                  <SelectValue placeholder="Choose status…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(CASE_STATUS_LABELS) as CaseStatus[]).map(
+                    (s) => (
+                      <SelectItem key={s} value={s}>
+                        {CASE_STATUS_LABELS[s]}
+                      </SelectItem>
+                    ),
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-68">
+              <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+                Enrichment
+              </span>
+              <Button
+                type="button"
+                variant="default"
+                className="h-10 w-full gap-2 font-medium shadow-sm sm:w-auto sm:min-w-54"
+                title="Queue research for each selected case. Already-running enrichments are skipped."
+                disabled={
+                  enrichBatchMutation.isPending || selectedIds.size === 0
+                }
+                onClick={() => {
+                  const ids = [...selectedIds]
+                  enrichBatchMutation.mutate(ids, {
+                    onSuccess: (res) => {
+                      toast.success(
+                        `Enrichment queued for ${res.started} case(s).`,
+                      )
+                      if (res.skipped.length > 0) {
+                        toast.message(
+                          `${res.skipped.length} skipped (already running).`,
+                        )
+                      }
+                      if (res.errors.length > 0) {
+                        toast.error(
+                          `${res.errors.length} could not be queued — check the API.`,
+                        )
+                      }
+                      setSelectedIds(new Set())
+                    },
+                    onError: (e) =>
+                      toast.error(
+                        e instanceof Error ? e.message : "Batch enrich failed",
+                      ),
+                  })
+                }}
+              >
+                <Sparkles className="size-4 shrink-0" strokeWidth={1.75} />
+                Run enrichment
+              </Button>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-10 shrink-0 sm:self-end"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              Clear selection
+            </Button>
           </div>
-          <ExportButton debtors={selectedDebtors} />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-9"
-            onClick={() => setSelectedIds(new Set())}
-          >
-            Clear selection
-          </Button>
         </div>
       ) : null}
 
