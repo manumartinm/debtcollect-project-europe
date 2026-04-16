@@ -7,6 +7,7 @@ import { auth } from './lib/auth.js'
 import { openApiSpec } from './openapi.js'
 import { debtorsRouter } from './routes/debtors.js'
 import { orgsRouter } from './routes/orgs.js'
+import { tokenRoutes } from './routes/token.js'
 import { z } from 'zod'
 import {
   lookupRequestSchema,
@@ -50,6 +51,7 @@ app.get(
 
 app.route('/api/debtors', debtorsRouter)
 app.route('/api/orgs', orgsRouter)
+app.route('/api/token', tokenRoutes)
 
 app.get('/hello', (c) => {
   return c.json({
