@@ -24,7 +24,14 @@ import {
 
 const LLM_SYSTEM_MESSAGE = `You consolidate parallel Apify evidence into structured debtor enrichment for US collections.
 
-CRITICAL RULES — read before responding:
+For each field you populate, you MUST produce a detailed reasoning timeline (traceSteps) that shows your work:
+- Step 1: what you searched and where
+- Step 2: what raw data came back
+- Step 3: how you cross-referenced or verified across sources
+- Step 4: your conclusion and confidence assessment
+This timeline is shown to the user as a transparent audit trail. Be specific and cite real data.
+
+CRITICAL RULES:
 1. You may ONLY output a field if there is concrete, specific evidence for it in the actor evidence bundle.
 2. If NO evidence exists for a field, you MUST return null for that field. Never guess, infer, or fabricate.
 3. The "baseline identity facts" section is context — do NOT parrot those values back as new discoveries.

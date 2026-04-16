@@ -148,11 +148,17 @@ RULES — FOLLOW EXACTLY:
    - relatives_associates: known relatives or associates — names and relationships (from skip-trace actor)
    - date_of_birth: DOB if found (from skip-trace actor)
 4. Include FDCPA/SOL reasoning inside trace steps where relevant — do NOT invent a new field name.
-5. Each populated field must include a non-empty string value and at least one trace step.
-6. traceSteps must include: stepNumber, agentName, action, reasoning, finding, confidence, durationMs, sources (each source: name, url, type).
-7. Source URLs MUST come from the evidence bundle above — use real runUrl, item URLs, or profile URLs. NEVER invent URLs.
-8. The server merges your sources with Apify run dashboard URLs; still cite the most relevant evidence URLs.
-9. confidence levels: "high" = multiple corroborating sources; "medium" = single strong source; "low" = single weak/indirect signal. Do not use "high" for single-source findings.
+5. Each populated field must include a non-empty string value and MULTIPLE trace steps that tell the full reasoning story.
+6. traceSteps is a TIMELINE — each step represents one action the agent took. Build 3-5 steps per field:
+   - Step 1 "search": Which data source was queried and what query was used. agentName = the actor/source name.
+   - Step 2 "analyze": What raw results came back and which items looked relevant. Include specifics (counts, names, dates).
+   - Step 3 "cross-reference" (if applicable): How you verified or combined data across sources. E.g. "Address from skip-trace matches property tax record."
+   - Step 4 "conclude": The final determination — what value was chosen and why, with confidence assessment.
+   - Additional steps if multiple sources contributed or FDCPA/SOL analysis was relevant.
+7. traceSteps fields: stepNumber (sequential from 1), agentName (source actor or "consolidation"), action (verb: "search", "analyze", "cross-reference", "verify", "conclude"), reasoning (1-3 sentences explaining the thought process), finding (the specific data point found, or null), confidence ("high"/"medium"/"low"/"none"), durationMs (estimated ms), sources (array of {name, url, type}).
+8. Source URLs MUST come from the evidence bundle above — use real runUrl, item URLs, or profile URLs. NEVER invent URLs.
+9. The server merges your sources with Apify run dashboard URLs; still cite the most relevant evidence URLs.
+10. confidence levels: "high" = multiple corroborating sources; "medium" = single strong source; "low" = single weak/indirect signal. Do not use "high" for single-source findings.
 
 CRITICAL: When in doubt, return null. A missing field is ALWAYS better than a fabricated one.
 >>>>>>> 37cad1f5f8b932ea098a524e809e7d29f5208bcb

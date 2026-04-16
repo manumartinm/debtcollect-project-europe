@@ -15,12 +15,12 @@ import { cn } from "@workspace/ui/lib/utils"
 import { DebtorActions } from "@/components/debtor-actions"
 import { DebtorEditSheet } from "@/components/debtor-edit-sheet"
 import { CallInsights } from "@/components/debtor-profile/call-insights"
-import { DynamicFields } from "@/components/debtor-profile/dynamic-fields"
-import { TraceStepDetail } from "@/components/debtor-profile/trace-step-detail"
+import { DynamicFields, type FieldTracePayload } from "@/components/debtor-profile/dynamic-fields"
+import { FieldTraceTimeline } from "@/components/debtor-profile/field-trace-timeline"
 import { FixedFields } from "@/components/debtor-profile/fixed-fields"
 import { LeverageIndicator } from "@/components/debtor-profile/leverage-indicator"
 import { StatusTimeline } from "@/components/debtor-profile/status-timeline"
-import type { ApiDebtor, ApiTraceStep } from "@/lib/api"
+import type { ApiDebtor } from "@/lib/api"
 import { useSession } from "@/lib/auth-client"
 import { parseDebtAmountString } from "@/lib/debtor-traces"
 import { useDebtorEnrichmentRealtime } from "@/hooks/use-debtor-enrichment-realtime"
@@ -99,8 +99,8 @@ export default function DebtorProfilePage() {
     if (debtor?.enrichmentStatus !== "running") setEnrichmentRealtime(null)
   }, [debtor?.enrichmentStatus])
 
-  const [traceSheetStep, setTraceSheetStep] =
-    React.useState<ApiTraceStep | null>(null)
+  const [tracePayload, setTracePayload] =
+    React.useState<FieldTracePayload | null>(null)
   const [editOpen, setEditOpen] = React.useState(false)
 
   React.useEffect(() => {
@@ -116,8 +116,8 @@ export default function DebtorProfilePage() {
     )
   }, [searchParams, setSearchParams])
 
-  const openTraceDetail = React.useCallback((step: ApiTraceStep) => {
-    setTraceSheetStep(step)
+  const openTraceDetail = React.useCallback((payload: FieldTracePayload) => {
+    setTracePayload(payload)
   }, [])
 
   const handleStatusChange = React.useCallback(
@@ -142,8 +142,8 @@ export default function DebtorProfilePage() {
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (traceSheetStep) {
-          setTraceSheetStep(null)
+        if (tracePayload) {
+          setTracePayload(null)
           return
         }
         navigate("/debtors")
@@ -151,7 +151,7 @@ export default function DebtorProfilePage() {
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [navigate, traceSheetStep])
+  }, [navigate, tracePayload])
 
   /** Prefer `GET /debtors/:id/enriched-fields` when loaded — detail payload can omit nested rows in some cases. Must run before any early return (Rules of Hooks). */
   const displayDebtor = React.useMemo((): ApiDebtor | null => {
@@ -340,9 +340,9 @@ export default function DebtorProfilePage() {
       />
 
       <Sheet
-        open={traceSheetStep !== null}
+        open={tracePayload !== null}
         onOpenChange={(open) => {
-          if (!open) setTraceSheetStep(null)
+          if (!open) setTracePayload(null)
         }}
       >
         <SheetContent
@@ -350,15 +350,19 @@ export default function DebtorProfilePage() {
           showCloseButton
           className="w-full gap-0 overflow-y-auto border-border p-0 sm:max-w-lg"
         >
-          {traceSheetStep ? (
+          {tracePayload ? (
             <>
               <SheetHeader className="border-b border-border px-6 py-4 text-left">
                 <SheetTitle className="text-base leading-snug font-semibold">
-                  Step {traceSheetStep.stepNumber} · {traceSheetStep.agentName}
+                  Reasoning trace
                 </SheetTitle>
               </SheetHeader>
-              <div className="px-6 py-4">
-                <TraceStepDetail step={traceSheetStep} />
+              <div className="px-6 py-5">
+                <FieldTraceTimeline
+                  fieldLabel={tracePayload.fieldLabel}
+                  fieldValue={tracePayload.fieldValue}
+                  steps={tracePayload.field.traceSteps}
+                />
               </div>
             </>
           ) : null}
