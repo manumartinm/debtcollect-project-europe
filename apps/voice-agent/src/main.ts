@@ -12,7 +12,7 @@ import * as silero from '@livekit/agents-plugin-silero';
 import { audioEnhancement } from '@livekit/plugins-ai-coustics';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'node:url';
-import { AGENT_MODEL, Agent } from './agent';
+import { Agent } from './agent';
 
 // Load environment variables from a local file.
 // Make sure to set LIVEKIT_URL, LIVEKIT_API_KEY, and LIVEKIT_API_SECRET
@@ -36,7 +36,7 @@ export default defineAgent({
       // A Large Language Model (LLM) is your agent's brain, processing user input and generating a response
       // See all providers at https://docs.livekit.io/agents/models/llm/
       llm: new inference.LLM({
-        model: AGENT_MODEL,
+        model: "openai/gpt-4.1-mini",
       }),
 
       // Text-to-speech (TTS) is your agent's voice, turning the LLM's text into speech that the user can hear
@@ -50,10 +50,6 @@ export default defineAgent({
       // See more at https://docs.livekit.io/agents/build/turns
       turnDetection: new livekit.turnDetector.MultilingualModel(),
       vad: ctx.proc.userData.vad! as silero.VAD,
-      voiceOptions: {
-        // Allow the LLM to generate a response while waiting for the end of turn
-        preemptiveGeneration: true,
-      },
     });
 
     // To use a realtime model instead of a voice pipeline, use the following session setup instead.
@@ -70,11 +66,6 @@ export default defineAgent({
     await session.start({
       agent: new Agent(),
       room: ctx.room,
-      inputOptions: {
-        // ai-coustics QUAIL audio enhancement for noise cancellation
-        // Works for both WebRTC and telephony (SIP) participants
-        noiseCancellation: audioEnhancement({ model: 'quailVfL' }),
-      },
     });
 
     // Join the room and connect to the user
