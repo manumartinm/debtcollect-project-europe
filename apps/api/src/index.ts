@@ -38,7 +38,7 @@ app.get('/api/openapi.json', (c) => c.json(openApiSpec))
 app.get(
   '/api/docs',
   Scalar({
-    pageTitle: 'Project Europe API',
+    pageTitle: 'Debt Collect API',
     theme: 'default',
     content: openApiSpec,
   }),

@@ -8,6 +8,15 @@ import { cn } from "@workspace/ui/lib/utils"
 import type { ApiDebtor, ApiEnrichedField } from "@/lib/api"
 import type { EnrichmentStatus } from "@/types/debtor"
 
+/** Max characters in the card; open the panel for the full value and/or trace. */
+const PREVIEW_MAX_CHARS = 160
+
+function previewPlainText(full: string): string {
+  const t = full.trim()
+  if (t.length <= PREVIEW_MAX_CHARS) return t
+  return `${t.slice(0, PREVIEW_MAX_CHARS).trimEnd()}…`
+}
+
 const FIELDS: { api: string; label: string }[] = [
   { api: "phone", label: "Phone" },
   { api: "address", label: "Address" },
@@ -56,32 +65,46 @@ function EnrichedFieldBlock({
   onOpenTrace?: (payload: FieldTracePayload) => void
 }) {
   const muted = value === "Not found" || value === "Unknown"
-  const hasTrace = field && field.traceSteps.length > 0
-  const stepCount = field?.traceSteps.length ?? 0
+  const stepCount = field?.traceSteps?.length ?? 0
+  const hasTrace = stepCount > 0
+  const preview = muted ? value : previewPlainText(value)
+  const isTruncated = !muted && value.length > PREVIEW_MAX_CHARS
+  const showOpenButton =
+    !muted &&
+    onOpenTrace &&
+    field &&
+    (hasTrace || isTruncated)
 
   return (
     <div className="relative rounded-xl border border-border bg-card px-4 py-3 pr-12">
-      {hasTrace && onOpenTrace ? (
+      {showOpenButton ? (
         <Tooltip>
           <TooltipTrigger
             type="button"
-            aria-label={`Open reasoning trace (${stepCount} steps)`}
+            aria-label={
+              hasTrace
+                ? `Open full value and reasoning trace (${stepCount} steps)`
+                : "Open full value"
+            }
             className="absolute top-2 right-2 inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
             onClick={() =>
-              onOpenTrace({ fieldLabel: label, fieldValue: value, field: field! })
+              onOpenTrace({ fieldLabel: label, fieldValue: value, field })
             }
           >
             <Bot className="size-4" strokeWidth={1.75} />
-            {stepCount > 1 && (
-              <span className="absolute -top-0.5 -right-0.5 flex size-3.5 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground">
-                {stepCount}
+            {hasTrace ? (
+              <span className="absolute -top-0.5 -right-0.5 flex min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[8px] font-bold text-primary-foreground">
+                {stepCount > 9 ? "9+" : stepCount}
               </span>
-            )}
-            <span className="sr-only">Open reasoning trace</span>
+            ) : null}
+            <span className="sr-only">Open full field detail</span>
           </TooltipTrigger>
-          <TooltipRich side="left" title="AI reasoning trace" className="max-w-[220px]">
-            See the {stepCount}-step reasoning chain: how this value was
-            searched, analyzed, cross-referenced, and concluded.
+          <TooltipRich side="left" title="Full detail" className="max-w-[240px]">
+            {isTruncated && hasTrace
+              ? "Preview only — open for the full value and the reasoning trace."
+              : isTruncated
+                ? "Preview only — open for the full value."
+                : `Open field name, full value, and ${stepCount} trace step${stepCount !== 1 ? "s" : ""}.`}
           </TooltipRich>
         </Tooltip>
       ) : null}
@@ -89,12 +112,13 @@ function EnrichedFieldBlock({
         {label}
       </p>
       <p
+        title={!muted && isTruncated ? value : undefined}
         className={cn(
           "mt-1 pr-1 text-sm",
           muted ? "text-muted-foreground" : "text-foreground",
         )}
       >
-        {value}
+        {preview}
       </p>
     </div>
   )
@@ -195,7 +219,7 @@ export function DynamicFields({
   const headerNote =
     st === "not_started" || st === "pending"
       ? "Stored enrichment data for this case — run enrichment again to refresh."
-      : "Click the bot icon on any field to see the full AI reasoning trace."
+      : "Preview only in each card — click the icon (top right) for the full value and reasoning trace."
 
   return (
     <section className="rounded-xl border border-border bg-card">

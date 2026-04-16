@@ -13,8 +13,8 @@ export function clearClientStorageAfterSignOut() {
   }
 }
 
-/** Wipes Vexor keys from localStorage (e.g. “start from zero” in dev). Keeps unrelated keys. */
-export function clearAllVexorLocalStorage() {
+/** Wipes app keys from localStorage (e.g. “start from zero” in dev). Keeps unrelated keys. */
+export function clearAllDebtCollectLocalStorage() {
   try {
     localStorage.removeItem(VEXOR_ACTIVE_ORG_ID_KEY)
     localStorage.removeItem(VEXOR_THEME_STORAGE_KEY)

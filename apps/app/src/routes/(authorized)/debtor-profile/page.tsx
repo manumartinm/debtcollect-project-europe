@@ -374,15 +374,40 @@ export default function DebtorProfilePage() {
             <>
               <SheetHeader className="border-b border-border px-6 py-4 text-left">
                 <SheetTitle className="text-base leading-snug font-semibold">
-                  Reasoning trace
+                  Enrichment detail
                 </SheetTitle>
               </SheetHeader>
-              <div className="px-6 py-5">
-                <FieldTraceTimeline
-                  fieldLabel={tracePayload.fieldLabel}
-                  fieldValue={tracePayload.fieldValue}
-                  steps={tracePayload.field.traceSteps}
-                />
+              <div className="space-y-6 px-6 py-5">
+                <div className="space-y-1">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Field
+                  </p>
+                  <p className="text-sm font-medium text-foreground">
+                    {tracePayload.fieldLabel}
+                  </p>
+                  <p className="font-mono text-xs text-muted-foreground">
+                    {tracePayload.field.fieldName}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Value
+                  </p>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                    {tracePayload.fieldValue}
+                  </p>
+                </div>
+                <div className="space-y-2 border-t border-border pt-5">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Reasoning trace
+                  </p>
+                  <FieldTraceTimeline
+                    fieldLabel={tracePayload.fieldLabel}
+                    fieldValue={tracePayload.fieldValue}
+                    steps={tracePayload.field.traceSteps ?? []}
+                    showFieldSummary={false}
+                  />
+                </div>
               </div>
             </>
           ) : null}

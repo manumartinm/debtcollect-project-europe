@@ -32,7 +32,7 @@ export default function SettingsPage() {
           <Separator />
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Organization</span>
-            <span className="font-medium">Vexor (hackathon)</span>
+            <span className="font-medium">Debt Collect</span>
           </div>
         </CardContent>
       </Card>

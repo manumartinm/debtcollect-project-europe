@@ -3,14 +3,29 @@ import { z } from "zod"
 export type AiSource = { name: string; url: string; type: string }
 
 export const explainabilityClaimSchema = z.object({
-  claim_content: z.string().min(1),
+  claim_content: z
+    .string()
+    .min(1)
+    .describe(
+      "One short paragraph of plain English (or the task language): what the evidence shows and why it matters. No JSON, no code fences, no bullet lists of key/value pairs.",
+    ),
   linked_citations: z.array(z.string().min(1)).min(1),
   confidence: z.enum(["High", "Medium", "Low"]),
 })
 
 export const enrichmentFieldOutputSchema = z.object({
-  value: z.string().min(1),
-  explainability: z.array(explainabilityClaimSchema).min(1),
+  value: z
+    .string()
+    .min(1)
+    .describe(
+      "The field value shown in the product UI: plain prose only — what you would say out loud to a colleague in one to three short sentences. No JSON objects or arrays, no ``` fences, no YAML, no {\"key\":...} or [\"a\",\"b\"] syntax, no indented key: value dumps. Numbers, dates, addresses, and single URLs inline as normal text are fine.",
+    ),
+  explainability: z
+    .array(explainabilityClaimSchema)
+    .min(1)
+    .describe(
+      "Audit trail (stored as trace steps). Structured claims are OK here; they are not the same as `value`.",
+    ),
 })
 
 /** Maps to `enriched_fields.field_name` check constraint — all keys nullable in LLM output.

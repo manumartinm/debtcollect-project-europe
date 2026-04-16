@@ -4,7 +4,7 @@
 export const openApiSpec = {
   openapi: '3.1.0',
   info: {
-    title: 'Project Europe API',
+    title: 'Debt Collect API',
     version: '1.0.0',
     description:
       'REST API for organizations, debtors (cases), enrichment fields, and status history.\n\n' +

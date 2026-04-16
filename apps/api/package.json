@@ -10,7 +10,7 @@
     "db:migrate": "node ./scripts/db-migrate.mjs",
     "db:studio": "drizzle-kit studio",
     "db:check": "drizzle-kit check",
-    "trigger:dev": "trigger.dev dev",
+    "trigger:dev": "trigger dev",
     "trigger:deploy": "trigger deploy",
     "trigger:login": "trigger login",
     "trigger:list": "trigger list",

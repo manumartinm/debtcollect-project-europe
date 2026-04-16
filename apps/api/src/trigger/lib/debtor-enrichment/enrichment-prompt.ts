@@ -123,7 +123,10 @@ RULES — FOLLOW EXACTLY:
    - date_of_birth: DOB if found (from skip-trace actor)
 4. Include FDCPA/SOL reasoning inside explainability claims where relevant — do NOT invent a new field name.
 5. Each populated field must include a non-empty string "value" and an "explainability" array of 2-5 claims.
-6. Explainability claims are an audit trail shown to the user. Each claim is an evidence-backed assertion:
+   - "value" is ONLY the display string for that field (like a CRM note). Write it as you would speak it: one to three short sentences, normal punctuation, optional line breaks between sentences. FORBIDDEN inside "value": JSON or pseudo-JSON ({ } [ ]), backtick code fences, YAML-style blocks, bullet lists of "key: value" pairs, or pasting raw actor record blobs. If you need structure, put it in explainability claims, not in "value".
+   - GOOD value example: "Primary phone (555) 234-8901 from skip-trace match in Ohio; also listed on the LinkedIn profile URL below."
+   - BAD value example: {"phone":"555..."} or Phone: ...\\nAddress: ... as a fake record dump.
+6. Explainability claims are the structured audit trail (stored as trace). Each claim is an evidence-backed assertion:
    - claim_content: a concise, human-readable paragraph (1-3 sentences) stating the claim and why the evidence supports it.
      Use inductive format: identify the evidence → explain the linkage → state the field conclusion.
    - linked_citations: 1+ source URLs that directly support this claim. MUST come from the evidence bundle (runUrl, item URLs, profile URLs). NEVER invent URLs.

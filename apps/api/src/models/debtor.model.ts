@@ -1,5 +1,6 @@
 import { eq, and, asc, desc } from 'drizzle-orm'
 import { db } from '../db/client.js'
+import { normalizeEnrichedFieldValueText } from '../lib/normalize-enriched-value.js'
 import {
   debtors,
   enrichedFields,
@@ -7,6 +8,19 @@ import {
   fieldTraceSources,
   statusEvents,
 } from '../db/schema.js'
+
+function mapDebtorEnrichedFieldValues<
+  T extends { enrichedFields?: Array<{ value: string | null } & Record<string, unknown>> },
+>(row: T): T {
+  if (!row.enrichedFields?.length) return row
+  return {
+    ...row,
+    enrichedFields: row.enrichedFields.map((f) => ({
+      ...f,
+      value: normalizeEnrichedFieldValueText(f.value) || null,
+    })),
+  }
+}
 
 function debtorWithRelations() {
   return {
@@ -28,25 +42,28 @@ function debtorWithRelations() {
 
 export class DebtorModel {
   static async findAllByOrg(orgId: string) {
-    return db.query.debtors.findMany({
+    const rows = await db.query.debtors.findMany({
       where: eq(debtors.orgId, orgId),
       with: debtorWithRelations(),
     })
+    return rows.map(mapDebtorEnrichedFieldValues)
   }
 
   static async findById(id: string) {
-    return db.query.debtors.findFirst({
+    const row = await db.query.debtors.findFirst({
       where: eq(debtors.id, id),
       with: debtorWithRelations(),
     })
+    return row ? mapDebtorEnrichedFieldValues(row) : null
   }
 
   /** Resolve by business case reference (human-readable; routes use debtor UUID). */
   static async findByCaseRef(caseRef: string) {
-    return db.query.debtors.findFirst({
+    const row = await db.query.debtors.findFirst({
       where: eq(debtors.caseRef, caseRef),
       with: debtorWithRelations(),
     })
+    return row ? mapDebtorEnrichedFieldValues(row) : null
   }
 
   static async create(body: Record<string, unknown>) {
@@ -119,10 +136,22 @@ export class DebtorModel {
       const e = r.enriched
       if (e) {
         const entries: Array<[string, string]> = []
-        if (e.phone?.trim()) entries.push(['phone', e.phone.trim()])
-        if (e.address?.trim()) entries.push(['address', e.address.trim()])
-        if (e.email?.trim()) entries.push(['email', e.email.trim()])
-        if (e.tax_id?.trim()) entries.push(['tax_id', e.tax_id.trim()])
+        if (e.phone?.trim()) {
+          const v = normalizeEnrichedFieldValueText(e.phone) || e.phone.trim()
+          if (v) entries.push(['phone', v])
+        }
+        if (e.address?.trim()) {
+          const v = normalizeEnrichedFieldValueText(e.address) || e.address.trim()
+          if (v) entries.push(['address', v])
+        }
+        if (e.email?.trim()) {
+          const v = normalizeEnrichedFieldValueText(e.email) || e.email.trim()
+          if (v) entries.push(['email', v])
+        }
+        if (e.tax_id?.trim()) {
+          const v = normalizeEnrichedFieldValueText(e.tax_id) || e.tax_id.trim()
+          if (v) entries.push(['tax_id', v])
+        }
         for (const [fieldName, value] of entries) {
           await db.insert(enrichedFields).values({
             debtorId: row.id,
@@ -231,7 +260,7 @@ export type TraceStepInput = {
 
 export class EnrichedFieldModel {
   static async findByDebtor(debtorId: string) {
-    return db.query.enrichedFields.findMany({
+    const rows = await db.query.enrichedFields.findMany({
       where: eq(enrichedFields.debtorId, debtorId),
       with: {
         traceSteps: {
@@ -242,6 +271,10 @@ export class EnrichedFieldModel {
         },
       },
     })
+    return rows.map((r) => ({
+      ...r,
+      value: normalizeEnrichedFieldValueText(r.value) || null,
+    }))
   }
 
   static async upsert(
@@ -256,6 +289,11 @@ export class EnrichedFieldModel {
     })
     if (!debtor) return null
 
+    const normalizedValue =
+      value == null || value === ''
+        ? null
+        : normalizeEnrichedFieldValueText(value) || null
+
     return db.transaction(async (tx) => {
       const existingRows = await tx
         .select({ id: enrichedFields.id })
@@ -269,13 +307,13 @@ export class EnrichedFieldModel {
         await tx.delete(fieldTraceSteps).where(eq(fieldTraceSteps.enrichedFieldId, existing.id))
         await tx
           .update(enrichedFields)
-          .set({ value })
+          .set({ value: normalizedValue })
           .where(eq(enrichedFields.id, existing.id))
         fieldId = existing.id
       } else {
         const [created] = await tx
           .insert(enrichedFields)
-          .values({ debtorId, fieldName, value })
+          .values({ debtorId, fieldName, value: normalizedValue })
           .returning({ id: enrichedFields.id })
         fieldId = created.id
       }
@@ -324,7 +362,11 @@ export class EnrichedFieldModel {
           },
         },
       })
-      return full ?? null
+      if (!full) return null
+      return {
+        ...full,
+        value: normalizeEnrichedFieldValueText(full.value) || null,
+      }
     })
   }
 }

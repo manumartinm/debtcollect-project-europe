@@ -137,38 +137,51 @@ export type FieldTraceTimelineProps = {
   fieldLabel: string
   fieldValue: string
   steps: ApiTraceStep[]
+  /**
+   * When false, only the step/claim list is rendered (use when field name + value are shown elsewhere).
+   */
+  showFieldSummary?: boolean
 }
 
 export function FieldTraceTimeline({
   fieldLabel,
   fieldValue,
   steps,
+  showFieldSummary = true,
 }: FieldTraceTimelineProps) {
   const sorted = [...steps].sort((a, b) => a.stepNumber - b.stepNumber)
   const hasClaims = sorted.some((s) => s.claimContent || s.linkedCitations?.length)
 
   return (
     <div className="space-y-5">
-      <div className="space-y-1.5">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          {fieldLabel}
-        </p>
-        <p className="text-sm font-medium text-foreground">{fieldValue}</p>
-        <p className="text-[11px] text-muted-foreground">
-          {sorted.length} evidence claim{sorted.length !== 1 ? "s" : ""}
-          {hasClaims ? " with linked citations" : ""}
-        </p>
-      </div>
+      {showFieldSummary ? (
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {fieldLabel}
+          </p>
+          <p className="text-sm font-medium text-foreground">{fieldValue}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {sorted.length} evidence claim{sorted.length !== 1 ? "s" : ""}
+            {hasClaims ? " with linked citations" : ""}
+          </p>
+        </div>
+      ) : null}
 
       <div>
-        {sorted.map((step, i) => (
-          <ClaimCard
-            key={step.id}
-            step={step}
-            index={i}
-            isLast={i === sorted.length - 1}
-          />
-        ))}
+        {sorted.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No trace steps recorded for this field.
+          </p>
+        ) : (
+          sorted.map((step, i) => (
+            <ClaimCard
+              key={step.id}
+              step={step}
+              index={i}
+              isLast={i === sorted.length - 1}
+            />
+          ))
+        )}
       </div>
     </div>
   )

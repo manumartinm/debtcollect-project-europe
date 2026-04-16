@@ -8,6 +8,10 @@ import { safeGenerateObject } from "./lib/llm-extract.js"
 import { resolveOpenAiResearchModelId } from "./lib/openai-model.js"
 import { ApifyActorPipeline } from "./lib/debtor-enrichment/apify-actor-pipeline.js"
 import { buildEnrichmentLlmPrompt } from "./lib/debtor-enrichment/enrichment-prompt.js"
+import {
+  buildEvidenceFallbackOutput,
+  mergeEnrichmentWithEvidenceFallback,
+} from "./lib/debtor-enrichment/evidence-fallback.js"
 import { persistEnrichmentOutput } from "./lib/debtor-enrichment/persist-enrichment.js"
 import { countPipelineItems } from "./lib/debtor-enrichment/pipeline-types.js"
 import { computeSolExpirationIso } from "./lib/fdcpa.js"
@@ -24,9 +28,13 @@ import {
 
 const LLM_SYSTEM_MESSAGE = `You consolidate parallel Apify evidence into structured debtor enrichment for US collections.
 
+Two different outputs per populated field — do not confuse them:
+1) "value" — This is the single human-readable summary shown as the field content. It must be normal prose: short sentences only. Never put JSON, object/array literals, markdown code blocks, or machine-readable key:value dumps inside "value". Imagine pasting into a CRM text field.
+2) "explainability" — This is the reasoning trace (claims with citations). Keep structured claims here; this is not the same as "value".
+
 For each field you populate, you MUST produce an "explainability" array of claims that shows your work:
-- Each claim has: claim_content (what the evidence says and why it supports the field), linked_citations (1+ real URLs from the evidence bundle), and confidence (High/Medium/Low).
-- Claims are shown to the user as a transparent audit trail. Be specific and cite real data.
+- Each claim has: claim_content (plain-language: what the evidence says and why it supports the field), linked_citations (1+ real URLs from the evidence bundle), and confidence (High/Medium/Low).
+- Claims are stored and may be shown as an audit trail. Be specific and cite real data. claim_content must also be plain text, not JSON.
 
 CRITICAL RULES:
 1. You may ONLY output a field if there is concrete, specific evidence for it in the actor evidence bundle.
@@ -155,7 +163,17 @@ export const debtorEnrichmentTask = task({
         })
       }
 
-      const finalOutput: DebtorEnrichmentOutput = llm ?? ({} as DebtorEnrichmentOutput)
+      const evidenceFallback = buildEvidenceFallbackOutput(branches)
+      const llmParsed = llm ? debtorEnrichmentOutputSchema.safeParse(llm) : null
+      if (llm && !llmParsed?.success) {
+        debtorEnrichmentLog.warn(
+          "LLM output failed full-schema validation — merging per-field with evidence fallback",
+          {
+            issues: llmParsed?.error?.issues?.slice(0, 8).map((i) => i.message),
+          },
+        )
+      }
+      const finalOutput = mergeEnrichmentWithEvidenceFallback(llm, evidenceFallback)
       const tPersist = Date.now()
       const persisted = await persistEnrichmentOutput(debtor.id, finalOutput, branches)
       debtorEnrichmentLog.info("DB: enriched fields + trace steps persisted", {

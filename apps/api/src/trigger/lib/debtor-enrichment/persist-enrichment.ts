@@ -1,9 +1,10 @@
 import { metadata } from "@trigger.dev/sdk/v3"
+import { normalizeEnrichedFieldValueText } from "../../../lib/normalize-enriched-value.js"
 import {
   EnrichedFieldModel,
   type TraceStepInput,
 } from "../../../models/debtor.model.js"
-import type { DebtorEnrichmentOutput } from "../../types.js"
+import type { DebtorEnrichmentOutput, EnrichmentFieldOutput } from "../../types.js"
 import type { PipelineBranches, TraceSourceRow } from "./pipeline-types.js"
 
 const fieldKeys = [
@@ -91,6 +92,50 @@ export class DebtorEnrichmentPersistence {
     return [{ name: "Apify console", url: APIFY_CONSOLE, type: "apify" }]
   }
 
+  private normalizeClaims(
+    field: EnrichmentFieldOutput,
+    pipelineSources: TraceSourceRow[],
+  ): Array<{
+    claim_content: string
+    linked_citations: string[]
+    confidence: "High" | "Medium" | "Low"
+  }> {
+    const raw = Array.isArray(field.explainability) ? field.explainability : []
+    const valid = raw.filter(
+      (c) =>
+        c &&
+        typeof c.claim_content === "string" &&
+        c.claim_content.trim().length > 0 &&
+        Array.isArray(c.linked_citations) &&
+        c.linked_citations.some((u) => typeof u === "string" && /^https?:\/\//i.test(u.trim())),
+    )
+    if (valid.length > 0) {
+      return valid.map((c) => {
+        const linked_citations = c.linked_citations.filter(
+          (u): u is string => typeof u === "string" && /^https?:\/\//i.test(u.trim()),
+        )
+        const conf =
+          c.confidence === "High" || c.confidence === "Medium" || c.confidence === "Low"
+            ? c.confidence
+            : "Low"
+        return {
+          claim_content: c.claim_content.trim(),
+          linked_citations: linked_citations.length > 0 ? linked_citations : [APIFY_CONSOLE],
+          confidence: conf,
+        }
+      })
+    }
+    const fallbackUrl = pipelineSources[0]?.url ?? APIFY_CONSOLE
+    return [
+      {
+        claim_content:
+          "Evidence-backed field (explainability was missing or invalid — recovered for trace persistence).",
+        linked_citations: [fallbackUrl],
+        confidence: "Low",
+      },
+    ]
+  }
+
   async persistOutput(
     debtorId: string,
     output: DebtorEnrichmentOutput,
@@ -101,9 +146,10 @@ export class DebtorEnrichmentPersistence {
     for (const fieldName of fieldKeys) {
       const field = output[fieldName]
       if (!field) continue
-      const value = field.value.trim()
+      const value = normalizeEnrichedFieldValueText(field.value)
       if (!value) continue
-      const traceSteps: TraceStepInput[] = field.explainability.map((claim, index) => ({
+      const claims = this.normalizeClaims(field, pipelineSources)
+      const traceSteps: TraceStepInput[] = claims.map((claim, index) => ({
         stepNumber: index + 1,
         agentName: "Debtor Enrichment LLM",
         action: "claim",
