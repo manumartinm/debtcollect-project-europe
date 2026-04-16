@@ -2,6 +2,7 @@
  * Research pipeline tasks (Trigger.dev discovers all files under src/trigger).
  * Main entry: `researchOrchestrator`.
  */
+export { debtorEnrichmentTask } from "./debtor-enrichment.js"
 export { bankruptcyAgent } from "./agents/bankruptcy-agent.js"
 export { businessEntityAgent } from "./agents/business-entity-agent.js"
 export { courtRecordsAgent } from "./agents/court-records-agent.js"

@@ -212,7 +212,7 @@ export class StatusEventModel {
   }
 }
 
-type TraceStepInput = {
+export type TraceStepInput = {
   stepNumber: number
   agentName: string
   action: string

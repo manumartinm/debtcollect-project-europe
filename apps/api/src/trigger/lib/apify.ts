@@ -75,4 +75,7 @@ export const APIFY_ACTORS = {
   linkedIn: "alwaysprimedev/linkedin-profile-scraper",
   facebookPeople: "patient_discovery/facebook-search-people",
   googleSearch: "apify/google-search-scraper",
+  instagramSearchUsers: "nkactors/instagram-search-users-api-no-cookies-fast-reliable",
+  linkedinPeopleSearch: "unlimitedleadtestinbox/linkedin-people-search-scraper-no-cookie",
+  twitterSearchUsers: "forge-api/x-scraper",
 } as const

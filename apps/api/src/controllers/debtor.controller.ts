@@ -1,28 +1,10 @@
 import type { Context } from 'hono'
-import { triggerResearchOrchestrator } from '../lib/enrich-trigger.js'
+import { triggerDebtorEnrichment } from '../lib/enrich-trigger.js'
 import {
   DebtorModel,
   StatusEventModel,
   EnrichedFieldModel,
 } from '../models/debtor.model.js'
-import type { ResearchOrchestratorPayload } from '../trigger/types.js'
-
-function toResearchPayload(d: {
-  caseRef: string
-  debtorName: string
-  country: string
-  debtAmount: string
-}): ResearchOrchestratorPayload {
-  const n = Number.parseFloat(d.debtAmount)
-  return {
-    caseRef: d.caseRef,
-    debtor: {
-      name: d.debtorName,
-      state: d.country,
-      debtAmount: Number.isFinite(n) ? n : undefined,
-    },
-  }
-}
 
 function paramId(c: Context): string {
   return c.req.param('id')!
@@ -107,7 +89,7 @@ export class DebtorController {
     await DebtorModel.update(id, { enrichmentStatus: 'running' })
 
     try {
-      const run = await triggerResearchOrchestrator(toResearchPayload(debtor))
+      const run = await triggerDebtorEnrichment({ debtorId: debtor.id })
       const fresh = await DebtorModel.findById(id)
       return c.json({ runId: run.id, debtor: fresh })
     } catch (e) {
@@ -145,7 +127,7 @@ export class DebtorController {
 
       await DebtorModel.update(id, { enrichmentStatus: 'running' })
       try {
-        await triggerResearchOrchestrator(toResearchPayload(debtor))
+        await triggerDebtorEnrichment({ debtorId: debtor.id })
         started.push(id)
       } catch (e) {
         await DebtorModel.update(id, { enrichmentStatus: 'failed' })
