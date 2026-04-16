@@ -6,6 +6,8 @@ import { VoiceAgentClient } from "@/components/voice-agent-client"
 import DashboardPage from "@/routes/(authorized)/dashboard/page"
 import DebtorProfilePage from "@/routes/(authorized)/debtor-profile/page"
 import DebtorsPage from "@/routes/(authorized)/debtors/page"
+import CallsPage from "@/routes/(authorized)/calls/page"
+import CallDetailPage from "@/routes/(authorized)/calls/[id]"
 import SettingsPage from "@/routes/(authorized)/settings/page"
 import UploadPage from "@/routes/(authorized)/upload/page"
 import OnboardingPage from "@/routes/(authorized)/onboarding/page"
@@ -29,6 +31,8 @@ export function AppRoutes() {
               <Route path="upload" element={<UploadPage />} />
               <Route path="debtors" element={<DebtorsPage />} />
               <Route path="debtors/:debtorId" element={<DebtorProfilePage />} />
+              <Route path="calls" element={<CallsPage />} />
+              <Route path="calls/:id" element={<CallDetailPage />} />
               <Route path="voice-agent" element={<VoiceAgentClient />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>

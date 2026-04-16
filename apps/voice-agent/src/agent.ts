@@ -60,64 +60,7 @@ export type DebtCollectionContext = {
   enrichmentFields: Record<string, string | null>;
 };
 
-export type TranscriptMessage = {
-  role: 'agent' | 'user';
-  content: string;
-  timestamp: Date;
-};
-
-async function sendTranscriptToAPI(
-  context: DebtCollectionContext,
-  callStartTime: Date,
-  callEndTime: Date,
-): Promise<void> {
-  try {
-    const apiUrl = process.env.API_URL || 'http://localhost:3000';
-    
-    // Create a placeholder transcript for now
-    // In production, this would be populated from the actual conversation
-    const transcript = `[AGENT]: Call initiated - Greeting debtor\n[DEBTOR]: <conversation would be recorded here>`;
-
-    const durationSeconds = Math.floor(
-      (callEndTime.getTime() - callStartTime.getTime()) / 1000,
-    );
-
-    const payload = {
-      debtorId: context.debtor.id,
-      orgId: context.debtor.orgId,
-      transcript,
-      callStartTime: callStartTime.toISOString(),
-      callEndTime: callEndTime.toISOString(),
-      durationSeconds,
-    };
-
-    const response = await fetch(`${apiUrl}/api/transcripts`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      console.error(
-        `Failed to send transcript: ${response.status} ${response.statusText}`,
-      );
-      const errorText = await response.text();
-      console.error('Error details:', errorText);
-    } else {
-      console.log('Transcript successfully sent to API');
-      const data = await response.json();
-      console.log('Transcript saved:', data);
-    }
-  } catch (error) {
-    console.error('Error sending transcript to API:', error);
-  }
-}
-
 export class Agent extends voice.Agent {
-  private callStartTime: Date = new Date();
-
   constructor(private readonly context: DebtCollectionContext) {
     let currentStatus: CaseStatus = context.debtor.caseStatus;
     let currentCallOutcome: CallOutcome = context.debtor.callOutcome;
@@ -173,13 +116,6 @@ export class Agent extends voice.Agent {
         }),
       },
     });
-
-    this.callStartTime = new Date();
-  }
-
-  async endCall(): Promise<void> {
-    const callEndTime = new Date();
-    await sendTranscriptToAPI(this.context, this.callStartTime, callEndTime);
   }
 }
 
