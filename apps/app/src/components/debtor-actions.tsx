@@ -221,7 +221,7 @@ export function DebtorActions({
             type="button"
             className={cn(
               buttonVariants({ variant: "outline", size: iconSize }),
-              "cursor-pointer shrink-0 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950 dark:hover:text-emerald-300",
+              "cursor-pointer shrink-0 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700",
             )}
             onClick={() => {
               setAiCallPhase("idle")

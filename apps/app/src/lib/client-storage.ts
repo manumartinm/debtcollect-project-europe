@@ -1,7 +1,7 @@
 /** Persisted org selection (see OrgProvider). */
 export const VEXOR_ACTIVE_ORG_ID_KEY = "vexor-active-org-id"
 
-/** Theme key — must match ThemeProvider `storageKey` in main.tsx */
+/** Legacy key cleared on load — app is light-theme only. */
 export const VEXOR_THEME_STORAGE_KEY = "vexor-theme"
 
 /** Call after sign-out so the next login does not reuse a stale org id. */

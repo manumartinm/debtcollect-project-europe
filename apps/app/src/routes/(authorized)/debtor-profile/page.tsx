@@ -15,6 +15,7 @@ import { cn } from "@workspace/ui/lib/utils"
 import { DebtorActions } from "@/components/debtor-actions"
 import { DebtorEditSheet } from "@/components/debtor-edit-sheet"
 import { CallInsights } from "@/components/debtor-profile/call-insights"
+import { DebtorCallsSection } from "@/components/debtor-profile/debtor-calls"
 import { DynamicFields, type FieldTracePayload } from "@/components/debtor-profile/dynamic-fields"
 import { FieldTraceTimeline } from "@/components/debtor-profile/field-trace-timeline"
 import { FixedFields } from "@/components/debtor-profile/fixed-fields"
@@ -56,7 +57,7 @@ function formatDebtEur(n: number) {
 }
 
 const leadTabTriggerClass =
-  "h-auto rounded-none border-0 bg-transparent px-2 py-1.5 text-[11px] font-medium text-muted-foreground shadow-none data-active:bg-transparent data-active:text-foreground data-active:shadow-none dark:data-active:bg-transparent sm:px-3 sm:text-xs"
+  "h-auto rounded-none border-0 bg-transparent px-2 py-1.5 text-[11px] font-medium text-muted-foreground shadow-none data-active:bg-transparent data-active:text-foreground data-active:shadow-none sm:px-3 sm:text-xs"
 
 export default function DebtorProfilePage() {
   const { debtorId: raw } = useParams()
@@ -222,6 +223,14 @@ export default function DebtorProfilePage() {
     </div>
   )
 
+  const callsColumn = (
+    <DebtorCallsSection
+      debtorId={displayDebtor.id}
+      orgId={displayDebtor.orgId}
+      debtorName={displayDebtor.debtorName}
+    />
+  )
+
   const leadTabs = (
     <Tabs defaultValue="insights" className="w-full min-w-0">
       <TabsList
@@ -237,12 +246,18 @@ export default function DebtorProfilePage() {
         <TabsTrigger value="fields" className={leadTabTriggerClass}>
           Fields
         </TabsTrigger>
+        <TabsTrigger value="calls" className={leadTabTriggerClass}>
+          Calls
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="insights" className="mt-5 min-w-0 outline-none">
         {insightsColumn}
       </TabsContent>
       <TabsContent value="fields" className="mt-5 min-w-0 outline-none">
         {fieldsColumn}
+      </TabsContent>
+      <TabsContent value="calls" className="mt-5 min-w-0 outline-none">
+        {callsColumn}
       </TabsContent>
     </Tabs>
   )
@@ -251,6 +266,11 @@ export default function DebtorProfilePage() {
     <div className="space-y-6">
       <FixedFields debtor={displayDebtor} />
       <StatusTimeline debtor={displayDebtor} onStatusChange={handleStatusChange} />
+      <DebtorCallsSection
+        debtorId={displayDebtor.id}
+        orgId={displayDebtor.orgId}
+        debtorName={displayDebtor.debtorName}
+      />
       <p className="text-sm leading-relaxed text-muted-foreground">
         Enrichment is off until you run it. You can still update case status and
         notes above. Start enrichment to load signals, leverage, and call

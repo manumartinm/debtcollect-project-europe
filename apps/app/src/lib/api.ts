@@ -364,7 +364,10 @@ export const transcriptsApi = {
     return api.get<ApiCallTranscript>(`/api/transcripts/${id}`)
   },
 
-  getByDebtor(debtorId: string) {
-    return api.get<ApiCallTranscript[]>(`/api/transcripts/debtor/${debtorId}`)
+  getByDebtor(debtorId: string, orgId: string) {
+    const q = new URLSearchParams({ orgId })
+    return api.get<ApiCallTranscript[]>(
+      `/api/transcripts/debtor/${encodeURIComponent(debtorId)}?${q}`
+    )
   },
 }

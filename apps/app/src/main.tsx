@@ -24,7 +24,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <ThemeProvider defaultTheme="light" storageKey="vexor-theme">
+        <ThemeProvider>
           <TooltipProvider>
             <AppRoutes />
             <Toaster position="top-center" richColors />

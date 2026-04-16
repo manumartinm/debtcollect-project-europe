@@ -1,4 +1,4 @@
-import { eq, desc } from 'drizzle-orm'
+import { and, eq, desc } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { callTranscripts } from '../db/schema.js'
 
@@ -23,9 +23,11 @@ export class TranscriptModel {
     })
   }
 
-  static async findByDebtor(debtorId: string) {
+  static async findByDebtor(debtorId: string, orgId?: string) {
     return db.query.callTranscripts.findMany({
-      where: eq(callTranscripts.debtorId, debtorId),
+      where: orgId
+        ? and(eq(callTranscripts.debtorId, debtorId), eq(callTranscripts.orgId, orgId))
+        : eq(callTranscripts.debtorId, debtorId),
       orderBy: [desc(callTranscripts.callStartTime)],
     })
   }

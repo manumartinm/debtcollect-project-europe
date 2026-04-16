@@ -91,35 +91,6 @@
     --shadow-clay-sm: 0 1px 2px rgb(15 23 42 / 0.04);
 }
 
-.dark {
-    --background: #ffffff;
-    --foreground: #111827;
-    --card: #ffffff;
-    --card-foreground: #111827;
-    --popover: #ffffff;
-    --popover-foreground: #111827;
-    --primary: #00c875;
-    --primary-foreground: #ffffff;
-    --secondary: #f4f5f7;
-    --secondary-foreground: #111827;
-    --muted: #f7f8fa;
-    --muted-foreground: #6b7280;
-    --accent: #f4f5f7;
-    --accent-foreground: #111827;
-    --destructive: #dc2626;
-    --border: #e8eaed;
-    --input: #e8eaed;
-    --ring: #00c875;
-    --sidebar: #ffffff;
-    --sidebar-foreground: #111827;
-    --sidebar-primary: #00c875;
-    --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #f4f5f7;
-    --sidebar-accent-foreground: #111827;
-    --sidebar-border: #e8eaed;
-    --sidebar-ring: #00c875;
-}
-
 @layer base {
   html {
     scroll-behavior: smooth;

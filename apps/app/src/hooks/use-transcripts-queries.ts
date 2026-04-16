@@ -19,10 +19,10 @@ export function useTranscript(id: string) {
   })
 }
 
-export function useTranscriptsByDebtor(debtorId: string) {
+export function useTranscriptsByDebtor(debtorId: string, orgId: string) {
   return useQuery({
-    queryKey: queryKeys.transcripts.byDebtor(debtorId),
-    queryFn: () => transcriptsApi.getByDebtor(debtorId),
-    enabled: !!debtorId,
+    queryKey: queryKeys.transcripts.byDebtor(debtorId, orgId),
+    queryFn: () => transcriptsApi.getByDebtor(debtorId, orgId),
+    enabled: !!debtorId && !!orgId,
   })
 }

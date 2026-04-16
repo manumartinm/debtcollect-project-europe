@@ -33,8 +33,10 @@ export class TranscriptController {
     const debtorId = c.req.param('debtorId')
     if (!debtorId) return c.json({ error: 'debtorId is required' }, 400)
 
+    const orgId = c.req.query('orgId') ?? undefined
+
     try {
-      const rows = await TranscriptModel.findByDebtor(debtorId)
+      const rows = await TranscriptModel.findByDebtor(debtorId, orgId)
       return c.json(rows)
     } catch (error) {
       console.error('Error fetching debtor transcripts:', error)
@@ -46,7 +48,8 @@ export class TranscriptController {
     try {
       const body = await c.req.json()
 
-      const { debtorId, orgId, transcript, callStartTime, callEndTime, durationSeconds } = body
+      const { debtorId, orgId, transcript, callStartTime, callEndTime, durationSeconds } =
+        body
 
       if (!debtorId || !orgId || !transcript || !callStartTime || !callEndTime) {
         return c.json(

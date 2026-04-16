@@ -1,5 +1,4 @@
-import * as React from "react"
-import { useParams, Link, useNavigate } from "react-router"
+import { useParams, Link } from "react-router"
 import { format, formatDuration, intervalToDuration } from "date-fns"
 import {
   Card,
@@ -7,9 +6,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card"
-import { Button } from "@workspace/ui/components/button"
-import { Separator } from "@workspace/ui/components/separator"
+import { buttonVariants } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
+import { cn } from "@workspace/ui/lib/utils"
 
 import { useTranscript } from "@/hooks/use-transcripts-queries"
 import { EmptyState } from "@/components/empty-state"
@@ -41,12 +40,13 @@ export default function CallDetailPage() {
   if (error || !transcript) {
     return (
       <div className="mx-auto max-w-4xl py-8">
-        <Button variant="ghost" size="sm" asChild className="mb-4">
-          <Link to="/calls">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to calls
-          </Link>
-        </Button>
+        <Link
+          to="/calls"
+          className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "mb-4")}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to calls
+        </Link>
         <EmptyState
           title="Call not found"
           description={error instanceof Error ? error.message : "The requested call transcript could not be found."}
@@ -73,12 +73,10 @@ export default function CallDetailPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <Button variant="ghost" size="sm" asChild>
-        <Link to="/calls">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to calls
-        </Link>
-      </Button>
+      <Link to="/calls" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back to calls
+      </Link>
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
@@ -89,6 +87,20 @@ export default function CallDetailPage() {
             Case: {transcript.debtor.caseRef}
           </p>
         )}
+        {transcript.debtorId ? (
+          <p className="mt-2">
+            <Link
+              to={`/debtors/${encodeURIComponent(transcript.debtorId)}`}
+              className={buttonVariants({
+                variant: "link",
+                size: "sm",
+                className: "h-auto p-0",
+              })}
+            >
+              Open debtor profile
+            </Link>
+          </p>
+        ) : null}
       </div>
 
       <Card className="border-border/80 shadow-none">
@@ -138,9 +150,9 @@ export default function CallDetailPage() {
                   key={index}
                   className={`rounded-lg px-3 py-2 ${
                     isAgent
-                      ? "border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-950"
+                      ? "border-l-4 border-blue-500 bg-blue-50"
                       : isUser
-                        ? "border-l-4 border-green-500 bg-green-50 dark:bg-green-950"
+                        ? "border-l-4 border-green-500 bg-green-50"
                         : "border-l-4 border-muted bg-muted/50"
                   }`}
                 >

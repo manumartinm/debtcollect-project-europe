@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Link } from "react-router"
+import { Link, Navigate } from "react-router"
 import { format } from "date-fns"
 import {
   Table,
@@ -23,10 +23,14 @@ import { EmptyState } from "@/components/empty-state"
 import { Phone } from "lucide-react"
 
 export default function CallsPage() {
-  const org = useOrg()
-  const { data: transcripts = [], isLoading, error } = useTranscriptsList(org?.id ?? "")
+  const { orgId, orgs, isLoading: orgLoading } = useOrg()
+  const { data: transcripts = [], isLoading, error } = useTranscriptsList(orgId ?? "")
 
-  if (isLoading) {
+  if (!orgLoading && orgs.length === 0) {
+    return <Navigate to="/onboarding" replace />
+  }
+
+  if (orgLoading || isLoading) {
     return (
       <div className="mx-auto max-w-6xl space-y-4 py-8">
         <div className="h-8 w-64 animate-pulse rounded bg-muted" />

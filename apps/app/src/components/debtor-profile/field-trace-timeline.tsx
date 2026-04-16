@@ -16,19 +16,19 @@ const CONFIDENCE_META: Record<
 > = {
   high: {
     icon: ShieldCheck,
-    color: "text-emerald-600 dark:text-emerald-400",
+    color: "text-emerald-600",
     bg: "bg-emerald-500/10 border-emerald-500/20",
     label: "High",
   },
   medium: {
     icon: ShieldAlert,
-    color: "text-amber-600 dark:text-amber-400",
+    color: "text-amber-600",
     bg: "bg-amber-500/10 border-amber-500/20",
     label: "Medium",
   },
   low: {
     icon: ShieldQuestion,
-    color: "text-orange-600 dark:text-orange-400",
+    color: "text-orange-600",
     bg: "bg-orange-500/10 border-orange-500/20",
     label: "Low",
   },
