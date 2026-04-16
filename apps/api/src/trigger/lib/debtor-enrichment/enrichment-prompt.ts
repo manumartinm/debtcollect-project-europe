@@ -103,32 +103,6 @@ ${JSON.stringify(fdcpaBlock, null, 2)}
 Actor evidence bundle (${totalItems} total items across all sources):
 ${JSON.stringify(evidence, null, 2)}
 
-<<<<<<< HEAD
-Rules:
-- Output ONLY optional enriched fields that are directly supported by the evidence. Omit any field you cannot justify.
-- Allowed output keys (each fully optional): phone, address, employer, assets, social_media_hints, income_bracket, email, tax_id.
-- Map skip-trace and contact-style data to phone, address, email as appropriate.
-- Map employer / company / officer roles to employer.
-- Map property, court, bankruptcy, and judgment-style signals to assets and/or income_bracket.
-- Map social and profile URLs / handles to social_media_hints.
-- Include FDCPA/SOL reasoning inside trace steps where relevant (e.g. time-barred discussion) — do NOT invent a new field name.
-- Each populated field must include a non-empty string value and at least one trace step.
-- Explainability (Trace Steps) requirements:
-  - Use explainability as a list of claim objects.
-  - Each claim must have:
-    - claim_content: a concise human-readable paragraph that states the claim and why the evidence supports it
-    - linked_citations: 1+ source URLs that directly support the claim
-    - confidence: exactly one of High, Medium, Low
-  - Follow a readable-prose inductive format: identify the evidence, explain the linkage, then state the field conclusion.
-  - Every claim must be directly supported by the cited URLs.
-  - If you quote evidence in the claim, quote it faithfully and keep it short.
-  - Omit weak or unsupported claims instead of stretching the evidence.
-  - Prefer a small number of strong claims over verbose narration.
-  - When a field is based on multiple actor bundles, make the claim content explicitly connect the evidence to the field.
-  - Do not write chain-of-thought, hidden reasoning, or unsupported inference.
-- The server merges your sources with all Apify actor run dashboard URLs for this job so trace rows always persist in the database; still cite the most relevant URLs in your answer.
-- Be factual and conservative.
-=======
 RULES — FOLLOW EXACTLY:
 1. Return null for ANY field where the evidence bundle does not contain concrete, specific supporting data.
 2. If ALL actors returned 0 items (itemCount: 0), you MUST return null for EVERY field. No exceptions.
@@ -161,7 +135,6 @@ RULES — FOLLOW EXACTLY:
 10. confidence levels: "high" = multiple corroborating sources; "medium" = single strong source; "low" = single weak/indirect signal. Do not use "high" for single-source findings.
 
 CRITICAL: When in doubt, return null. A missing field is ALWAYS better than a fabricated one.
->>>>>>> 37cad1f5f8b932ea098a524e809e7d29f5208bcb
 `
   }
 }

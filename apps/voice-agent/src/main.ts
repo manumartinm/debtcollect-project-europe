@@ -15,7 +15,6 @@ import { Agent, type DebtCollectionContext } from './agent';
 
 dotenv.config({ path: '.env.local' });
 
-<<<<<<< HEAD
 const requiredEnvVars = ['LIVEKIT_URL', 'LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET'] as const;
 const missingEnvVars = requiredEnvVars.filter((name) => !process.env[name]?.trim());
 
@@ -26,7 +25,7 @@ if (missingEnvVars.length > 0) {
   );
   process.exit(0);
 }
-=======
+
 const callContext: DebtCollectionContext = {
   collector: {
     collectorName: 'Alex Rivera',
@@ -67,7 +66,6 @@ const callContext: DebtCollectionContext = {
     hardship_signal: 'Medical bills mentioned in prior conversation',
   },
 };
->>>>>>> 37cad1f5f8b932ea098a524e809e7d29f5208bcb
 
 export default defineAgent({
   prewarm: async (proc: JobProcess) => {

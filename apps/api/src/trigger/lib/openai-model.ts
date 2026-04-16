@@ -10,11 +10,7 @@ export function resolveOpenAiResearchModelId(): string {
 
 /** Default chat model for enrichment (override with `OPENAI_RESEARCH_MODEL`). */
 export class ResearchOpenAiModel {
-<<<<<<< HEAD
-  constructor(private readonly modelId = process.env.OPENAI_RESEARCH_MODEL ?? "gpt-5.4") {}
-=======
   constructor(private readonly modelId = resolveOpenAiResearchModelId()) {}
->>>>>>> 37cad1f5f8b932ea098a524e809e7d29f5208bcb
 
   get languageModel(): LanguageModel {
     return openai(this.modelId)
