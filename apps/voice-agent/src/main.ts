@@ -91,6 +91,5 @@ export default defineAgent({
 cli.runApp(
   new ServerOptions({
     agent: fileURLToPath(import.meta.url),
-    agentName: 'voice-agent',
   }),
 );

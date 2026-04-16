@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router"
 
 import { AnimatedOutlet } from "@/components/animated-outlet"
 import { AppLayout } from "@/components/app-layout"
+import { VoiceAgentClient } from "@/components/voice-agent-client"
 import DashboardPage from "@/routes/(authorized)/dashboard/page"
 import DebtorProfilePage from "@/routes/(authorized)/debtor-profile/page"
 import DebtorsPage from "@/routes/(authorized)/debtors/page"
@@ -28,6 +29,7 @@ export function AppRoutes() {
               <Route path="upload" element={<UploadPage />} />
               <Route path="debtors" element={<DebtorsPage />} />
               <Route path="debtors/:debtorId" element={<DebtorProfilePage />} />
+              <Route path="voice-agent" element={<VoiceAgentClient />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
           </Route>
