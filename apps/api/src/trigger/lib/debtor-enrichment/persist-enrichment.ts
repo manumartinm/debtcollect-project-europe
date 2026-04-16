@@ -8,13 +8,10 @@ import type { DebtorEnrichmentOutput, EnrichmentFieldOutput } from "../../types.
 import type { PipelineBranches, TraceSourceRow } from "./pipeline-types.js"
 
 const fieldKeys = [
-  "phone",
-  "address",
   "employer",
   "assets",
   "social_media_hints",
   "income_bracket",
-  "email",
   "tax_id",
   "bankruptcy_status",
   "litigation_history",

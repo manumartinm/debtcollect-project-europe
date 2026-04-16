@@ -11,13 +11,10 @@ import {
 import type { PipelineBranches } from "./pipeline-types.js"
 
 const fieldKeys = [
-  "phone",
-  "address",
   "employer",
   "assets",
   "social_media_hints",
   "income_bracket",
-  "email",
   "tax_id",
   "bankruptcy_status",
   "litigation_history",
@@ -29,13 +26,10 @@ const fieldKeys = [
 
 function emptyOutput(): DebtorEnrichmentOutput {
   return {
-    phone: null,
-    address: null,
     employer: null,
     assets: null,
     social_media_hints: null,
     income_bracket: null,
-    email: null,
     tax_id: null,
     bankruptcy_status: null,
     litigation_history: null,
@@ -106,42 +100,6 @@ export function buildEvidenceFallbackOutput(branches: PipelineBranches): DebtorE
   if (st.items.length > 0 && st.runUrl) {
     for (const raw of st.items) {
       const item = asRecord(raw)
-      const phone = firstNonEmptyString(
-        item.phone,
-        Array.isArray(item.phones) ? (item.phones[0] as unknown) : undefined,
-        typeof item.phones === "object" && item.phones
-          ? firstNonEmptyString(...Object.values(asRecord(item.phones)))
-          : undefined,
-      )
-      if (phone && !out.phone) {
-        out.phone = evidenceField(
-          phone,
-          st.runUrl,
-          "Phone number surfaced in skip-trace / people-data actor output.",
-        )
-      }
-      const email = firstNonEmptyString(
-        item.email,
-        Array.isArray(item.emails) ? (item.emails[0] as unknown) : undefined,
-      )
-      if (email && !out.email) {
-        out.email = evidenceField(
-          email,
-          st.runUrl,
-          "Email surfaced in skip-trace actor output.",
-        )
-      }
-      const addr = firstNonEmptyString(item.address, item.city, item.state, item.zip)
-      if (addr && !out.address) {
-        const parts = [item.address, item.city, item.state, item.zip]
-          .map((x) => (typeof x === "string" ? x.trim() : ""))
-          .filter(Boolean)
-        out.address = evidenceField(
-          parts.join(", ") || addr,
-          st.runUrl,
-          "Address fields from skip-trace actor output.",
-        )
-      }
       const dob = firstNonEmptyString(item.dob, item.dateOfBirth)
       if (dob && !out.date_of_birth) {
         out.date_of_birth = evidenceField(

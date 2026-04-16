@@ -97,6 +97,8 @@ export class DebtorEnrichmentPromptComposer {
 Known baseline identity facts (CONTEXT ONLY — do NOT repeat these as new discoveries):
 ${JSON.stringify(facts, null, 2)}
 
+Baseline contact identifiers such as phone, address, and email are expected to already exist in the debtor record / enriched_fields store when available. Do not emit them as enrichment outputs. Tax ID may be emitted when directly supported by evidence or when the actor output normalizes an existing debtor identifier.
+
 FDCPA / statute-of-limitations context (for trace reasoning only — not a separate output field):
 ${JSON.stringify(fdcpaBlock, null, 2)}
 
@@ -107,14 +109,11 @@ RULES — FOLLOW EXACTLY:
 1. Return null for ANY field where the evidence bundle does not contain concrete, specific supporting data.
 2. If ALL actors returned 0 items (itemCount: 0), you MUST return null for EVERY field. No exceptions.
 3. Allowed output keys (each fully optional, all nullable):
-   - phone: phone numbers from skip-trace or contact data
-   - address: physical addresses from skip-trace, property, or contact data
-   - email: email addresses from skip-trace or contact data
-   - tax_id: SSN, EIN, or tax identifiers
    - employer: current or recent employer / company / officer roles (from LinkedIn, business entity, skip-trace)
    - income_bracket: estimated income range based on property values, employment, business ownership (e.g. "75k-100k", "100k-150k")
    - assets: summary of known assets — property, vehicles, business equity, judgments owed TO debtor
    - social_media_hints: social media profiles, handles, URLs (from Instagram, LinkedIn, Twitter, Google)
+   - tax_id: tax identifier / tax ID if directly supported by evidence. Set to NULL if already present on user data.
    - bankruptcy_status: active or past bankruptcy filings — chapter, case number, court, status, dates (from bankruptcy + RECAP actors)
    - litigation_history: civil suits, judgments, court cases — case names, courts, outcomes, dates (from court records + RECAP actors)
    - property_ownership: real estate holdings — addresses, assessed values, tax amounts, counties (from property tax actor)
@@ -136,11 +135,11 @@ RULES — FOLLOW EXACTLY:
    - Claim 2: what specific data points were extracted and how they link to the field (cite item-level URLs if available).
    - Claim 3 (if applicable): cross-referencing between sources, or FDCPA/SOL analysis.
    - Final claim: conclusion with confidence assessment.
-8. Every claim must be directly supported by the cited URLs. Do not write unsupported inference.
+8. Every claim must be directly supported by the cited URLs. Do not write unsupported inference. URLS must not be from Apify.
 9. Quote evidence faithfully and keep it short. Prefer a small number of strong claims over verbose narration.
 10. confidence levels: "High" = multiple corroborating sources; "Medium" = single strong source; "Low" = single weak/indirect signal.
 
-CRITICAL: When in doubt, return null. A missing field is ALWAYS better than a fabricated one.
+CRITICAL: When in doubt about a field, return confidence="Low" or null depending on your confidence in the evidence. A missing field is ALWAYS better than a fabricated one.
 `
   }
 }

@@ -31,13 +31,10 @@ export const enrichmentFieldOutputSchema = z.object({
 /** Maps to `enriched_fields.field_name` check constraint — all keys nullable in LLM output.
  * OpenAI structured output requires every property in `required`, so we use `.nullable()` instead of `.optional()`. */
 export const debtorEnrichmentOutputSchema = z.object({
-  phone: enrichmentFieldOutputSchema.nullable(),
-  address: enrichmentFieldOutputSchema.nullable(),
   employer: enrichmentFieldOutputSchema.nullable(),
   assets: enrichmentFieldOutputSchema.nullable(),
   social_media_hints: enrichmentFieldOutputSchema.nullable(),
   income_bracket: enrichmentFieldOutputSchema.nullable(),
-  email: enrichmentFieldOutputSchema.nullable(),
   tax_id: enrichmentFieldOutputSchema.nullable(),
   bankruptcy_status: enrichmentFieldOutputSchema.nullable(),
   litigation_history: enrichmentFieldOutputSchema.nullable(),
