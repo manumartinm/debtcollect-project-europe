@@ -2,7 +2,7 @@
 
 AI-assisted Debt Recovery Platform designed to turn silent cases into actionable conversations. Part of "The Last Human Industry", Vexor x Project Europe Barcelona Hackathon Challenge.
 
-<img width="1920" height="1280" alt="deepcollect-debtors" src="https://github.com/user-attachments/assets/181054de-9626-4902-a78f-1bf9da415157" />
+[<img src="https://img.youtube.com/vi/S0jd2Gv9qGM/sddefault.jpg" alt="Demo Video" style="width: 100%;">](https://www.youtube.com/watch?v=S0jd2Gv9qGM "Demo video")
 
 DeepCollect combines portfolio ingestion, automated background research, and voice operations in one workflow:
 
