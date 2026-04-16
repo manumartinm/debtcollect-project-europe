@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select"
 import { cn } from "@workspace/ui/lib/utils"
+import { Tooltip, TooltipTrigger } from "@workspace/ui/components/tooltip"
+import { TooltipRich } from "@/components/tooltip-rich"
 
 import { DebtorCardList } from "@/components/debtor-card-list"
 import { DebtorTable } from "@/components/debtor-table"
@@ -29,9 +31,9 @@ import {
   useSetDebtorStatus,
 } from "@/hooks/use-debtors-queries"
 import type { CaseStatus } from "@/types/debtor"
-import { CASE_STATUS_LABELS } from "@/types/debtor"
+import { CASE_STATUS_LABELS, caseStatusLabel } from "@/types/debtor"
 import { useMinLg } from "@/hooks/use-media"
-import { Search, Sparkles, Upload } from "lucide-react"
+import { Search, Upload, Wand2 } from "lucide-react"
 
 const PAGE = 15
 
@@ -70,12 +72,15 @@ function FilterSelect({
   value,
   onValueChange,
   children,
+  renderValue,
 }: {
   id: string
   label: string
   value: string
   onValueChange: (v: string) => void
   children: React.ReactNode
+  /** When set, controls trigger label (e.g. case status → title case, not raw value). */
+  renderValue?: (value: string) => React.ReactNode
 }) {
   return (
     <div className="flex min-w-26 flex-1 flex-col gap-1 sm:min-w-30 sm:flex-none">
@@ -87,7 +92,13 @@ function FilterSelect({
       </Label>
       <Select value={value} onValueChange={(v) => onValueChange(v ?? "")}>
         <SelectTrigger id={id} className="h-9 w-full text-xs sm:text-sm">
-          <SelectValue />
+          {renderValue ? (
+            <SelectValue>
+              {(v) => renderValue(String(v ?? ""))}
+            </SelectValue>
+          ) : (
+            <SelectValue />
+          )}
         </SelectTrigger>
         <SelectContent>{children}</SelectContent>
       </Select>
@@ -326,6 +337,9 @@ export default function DebtorsPage() {
             id="filter-status"
             label="Status"
             value={status}
+            renderValue={(v) =>
+              v === "all" ? "All" : caseStatusLabel(v)
+            }
             onValueChange={(v) => {
               setStatus(v)
               setPage(0)
@@ -394,93 +408,117 @@ export default function DebtorsPage() {
 
       {selectedIds.size > 0 ? (
         <div
-          className="rounded-lg border border-primary/25 bg-primary/5 px-4 py-4"
+          className="rounded-lg border border-border bg-muted/40 px-4 py-3 shadow-sm"
           role="region"
           aria-label="Bulk actions"
         >
-          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-6 sm:gap-y-3">
-            <p className="text-sm font-semibold text-foreground sm:shrink-0 sm:pb-0.5">
-              {selectedIds.size} selected
-            </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+            <div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-8 sm:gap-y-3">
+              <div className="flex flex-col gap-1 sm:shrink-0">
+                <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+                  Selection
+                </span>
+                <p className="text-sm font-semibold tabular-nums text-foreground">
+                  {selectedIds.size} selected
+                </p>
+              </div>
 
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-[16rem]">
-              <Label
-                htmlFor="bulk-status"
-                className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase"
-              >
-                Set case status
-              </Label>
-              <Select
-                onValueChange={(v) => {
-                  if (v) applyBulkStatus(v as CaseStatus)
-                }}
-              >
-                <SelectTrigger
-                  id="bulk-status"
-                  className="h-10 w-full bg-background text-sm"
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-[16rem]">
+                <Label
+                  htmlFor="bulk-status"
+                  className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase"
                 >
-                  <SelectValue placeholder="Choose status…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(CASE_STATUS_LABELS) as CaseStatus[]).map(
-                    (s) => (
-                      <SelectItem key={s} value={s}>
-                        {CASE_STATUS_LABELS[s]}
-                      </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-68">
-              <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                Enrichment
-              </span>
-              <Button
-                type="button"
-                variant="default"
-                className="h-10 w-full gap-2 font-medium shadow-sm sm:w-auto sm:min-w-54"
-                title="Queue research for each selected case. Already-running enrichments are skipped."
-                disabled={
-                  enrichBatchMutation.isPending || selectedIds.size === 0
-                }
-                onClick={() => {
-                  const ids = [...selectedIds]
-                  enrichBatchMutation.mutate(ids, {
-                    onSuccess: (res) => {
-                      toast.success(
-                        `Enrichment queued for ${res.started} case(s).`,
-                      )
-                      if (res.skipped.length > 0) {
-                        toast.message(
-                          `${res.skipped.length} skipped (already running).`,
-                        )
+                  Set case status
+                </Label>
+                <Select
+                  onValueChange={(v) => {
+                    if (v) applyBulkStatus(v as CaseStatus)
+                  }}
+                >
+                  <SelectTrigger
+                    id="bulk-status"
+                    className="h-10 w-full border-border bg-background text-sm"
+                  >
+                    <SelectValue placeholder="Choose status…">
+                      {(v) =>
+                        v == null || v === ""
+                          ? null
+                          : caseStatusLabel(String(v))
                       }
-                      if (res.errors.length > 0) {
-                        toast.error(
-                          `${res.errors.length} could not be queued — check the API.`,
-                        )
-                      }
-                      setSelectedIds(new Set())
-                    },
-                    onError: (e) =>
-                      toast.error(
-                        e instanceof Error ? e.message : "Batch enrich failed",
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(CASE_STATUS_LABELS) as CaseStatus[]).map(
+                      (s) => (
+                        <SelectItem key={s} value={s}>
+                          {CASE_STATUS_LABELS[s]}
+                        </SelectItem>
                       ),
-                  })
-                }}
-              >
-                <Sparkles className="size-4 shrink-0" strokeWidth={1.75} />
-                Run enrichment
-              </Button>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-68">
+                <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+                  Enrichment
+                </span>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        type="button"
+                        variant="default"
+                        className="h-10 w-full gap-2 font-medium shadow-sm sm:w-auto sm:min-w-54"
+                        disabled={
+                          enrichBatchMutation.isPending || selectedIds.size === 0
+                        }
+                        onClick={() => {
+                          const ids = [...selectedIds]
+                          enrichBatchMutation.mutate(ids, {
+                            onSuccess: (res) => {
+                              toast.success(
+                                `Enrichment queued for ${res.started} case(s).`,
+                              )
+                              if (res.skipped.length > 0) {
+                                toast.message(
+                                  `${res.skipped.length} skipped (already running).`,
+                                )
+                              }
+                              if (res.errors.length > 0) {
+                                toast.error(
+                                  `${res.errors.length} could not be queued — check the API.`,
+                                )
+                              }
+                              setSelectedIds(new Set())
+                            },
+                            onError: (e) =>
+                              toast.error(
+                                e instanceof Error
+                                  ? e.message
+                                  : "Batch enrich failed",
+                              ),
+                          })
+                        }}
+                      />
+                    }
+                  >
+                    <Wand2 className="size-4 shrink-0" strokeWidth={1.75} />
+                    Run enrichment
+                  </TooltipTrigger>
+                  <TooltipRich side="top" title="Run enrichment (batch)">
+                    Queue the research pipeline for each selected case (wand
+                    icon). Cases already running are skipped. Field-level AI
+                    traces use the robot icon on the debtor page.
+                  </TooltipRich>
+                </Tooltip>
+              </div>
             </div>
 
             <Button
               type="button"
               variant="outline"
-              size="sm"
-              className="h-10 shrink-0 sm:self-end"
+              className="h-10 w-full shrink-0 border-border bg-background sm:w-auto"
               onClick={() => setSelectedIds(new Set())}
             >
               Clear selection

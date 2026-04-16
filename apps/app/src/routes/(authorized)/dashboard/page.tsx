@@ -17,8 +17,7 @@ import { StatsCards } from "@/components/stats-cards"
 import { useOrg } from "@/context/org-context"
 import { useDebtorsList } from "@/hooks/use-debtors-queries"
 import { parseDebtAmountString } from "@/lib/debtor-traces"
-import type { CaseStatus, LeverageLevel } from "@/types/debtor"
-import { CASE_STATUS_LABELS } from "@/types/debtor"
+import { caseStatusLabel, type LeverageLevel } from "@/types/debtor"
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en-EU", {
@@ -190,7 +189,7 @@ export default function DashboardPage() {
                   <div key={status} className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">
-                        {CASE_STATUS_LABELS[status as CaseStatus] ?? status}
+                        {caseStatusLabel(status)}
                       </span>
                       <span className="font-medium">{n}</span>
                     </div>
@@ -244,7 +243,7 @@ export default function DashboardPage() {
                         {e.name}
                       </Link>{" "}
                       <span className="text-muted-foreground">—</span>{" "}
-                      {CASE_STATUS_LABELS[e.status as CaseStatus] ?? e.status}
+                      {caseStatusLabel(e.status)}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(e.occurredAt).toLocaleString()} · {e.author}

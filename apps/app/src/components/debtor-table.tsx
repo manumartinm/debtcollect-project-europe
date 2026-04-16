@@ -11,12 +11,13 @@ import {
   TableRow,
 } from "@workspace/ui/components/table"
 import { cn } from "@workspace/ui/lib/utils"
+import { DebtorActions } from "@/components/debtor-actions"
 import { LeverageBadge } from "@/components/leverage-badge"
 import type { ApiDebtor } from "@/lib/api"
 import { ENRICHMENT_STATUS_LABEL } from "@/lib/enrichment-labels"
 import { parseDebtAmountString } from "@/lib/debtor-traces"
 import type { CaseStatus, LeverageLevel } from "@/types/debtor"
-import { CASE_STATUS_LABELS } from "@/types/debtor"
+import { caseStatusLabel } from "@/types/debtor"
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en-EU", {
@@ -27,6 +28,9 @@ function formatMoney(n: number) {
 }
 
 export type DebtorTableSortKey = "debtAmount" | "caseStatus" | "none"
+
+const SELECT_CHECKBOX_CLASS =
+  "size-4 shrink-0 cursor-pointer rounded border border-input accent-primary"
 
 export type DebtorTableProps = {
   rows: ApiDebtor[]
@@ -88,7 +92,7 @@ export function DebtorTable({
                 <input
                   ref={headerCheckboxRef}
                   type="checkbox"
-                  className="size-4 cursor-pointer rounded border-input accent-primary"
+                  className={SELECT_CHECKBOX_CLASS}
                   checked={allPageSelected}
                   onChange={() =>
                     selection.onTogglePage(pageIds, !allPageSelected)
@@ -106,6 +110,7 @@ export function DebtorTable({
             <TableHead>{headBtn("caseStatus", "Status")}</TableHead>
             <TableHead>Leverage</TableHead>
             <TableHead>Enrichment</TableHead>
+            <TableHead className="w-[132px] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -114,15 +119,13 @@ export function DebtorTable({
             return (
               <TableRow
                 key={d.id}
+                data-state={isSelected ? "selected" : undefined}
                 style={
                   {
                     "--vexor-stagger": `${index * 32}ms`,
                   } as React.CSSProperties
                 }
-                className={cn(
-                  "vexor-fade-up cursor-pointer",
-                  isSelected && "bg-primary/5"
-                )}
+                className="vexor-fade-up cursor-pointer"
                 onClick={() => {
                   navigate(`/debtors/${encodeURIComponent(d.id)}`)
                 }}
@@ -134,7 +137,7 @@ export function DebtorTable({
                   >
                     <input
                       type="checkbox"
-                      className="size-4 cursor-pointer rounded border-input accent-primary"
+                      className={SELECT_CHECKBOX_CLASS}
                       checked={isSelected}
                       onChange={() => selection.onToggle(d.id)}
                       aria-label={`Select ${d.debtorName}`}
@@ -155,7 +158,7 @@ export function DebtorTable({
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="font-normal">
-                    {CASE_STATUS_LABELS[d.caseStatus as CaseStatus]}
+                    {caseStatusLabel(d.caseStatus)}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -174,6 +177,12 @@ export function DebtorTable({
                       d.enrichmentStatus as keyof typeof ENRICHMENT_STATUS_LABEL
                     ] ?? d.enrichmentStatus}
                   </Badge>
+                </TableCell>
+                <TableCell
+                  className="text-right"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <DebtorActions debtor={d} />
                 </TableCell>
               </TableRow>
             )
