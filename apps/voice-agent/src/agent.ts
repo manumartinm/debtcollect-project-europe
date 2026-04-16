@@ -60,6 +60,129 @@ export type DebtCollectionContext = {
   enrichmentFields: Record<string, string | null>;
 };
 
+export type TranscriptMessage = {
+  role: 'agent' | 'user';
+  content: string;
+  timestamp: Date;
+};
+
+async function sendTranscriptToAPI(
+  context: DebtCollectionContext,
+  callStartTime: Date,
+  callEndTime: Date,
+): Promise<void> {
+  try {
+    const apiUrl = process.env.API_URL || 'http://localhost:3000';
+    
+    // Create a placeholder transcript for now
+    // In production, this would be populated from the actual conversation
+    const transcript = `[AGENT]: Call initiated - Greeting debtor\n[DEBTOR]: <conversation would be recorded here>`;
+
+    const durationSeconds = Math.floor(
+      (callEndTime.getTime() - callStartTime.getTime()) / 1000,
+    );
+
+    const payload = {
+      debtorId: context.debtor.id,
+      orgId: context.debtor.orgId,
+      transcript,
+      callStartTime: callStartTime.toISOString(),
+      callEndTime: callEndTime.toISOString(),
+      durationSeconds,
+    };
+
+    const response = await fetch(`${apiUrl}/api/transcripts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      console.error(
+        `Failed to send transcript: ${response.status} ${response.statusText}`,
+      );
+      const errorText = await response.text();
+      console.error('Error details:', errorText);
+    } else {
+      console.log('Transcript successfully sent to API');
+      const data = await response.json();
+      console.log('Transcript saved:', data);
+    }
+  } catch (error) {
+    console.error('Error sending transcript to API:', error);
+  }
+}
+
+export class Agent extends voice.Agent {
+  private callStartTime: Date = new Date();
+
+  constructor(private readonly context: DebtCollectionContext) {
+    let currentStatus: CaseStatus = context.debtor.caseStatus;
+    let currentCallOutcome: CallOutcome = context.debtor.callOutcome;
+
+    super({
+      instructions: buildInstructions(context),
+      tools: {
+        getCaseSummary: llm.tool({
+          description:
+            'Get a compact snapshot of the current debtor case, including status, outcome, and enrichment fields.',
+          parameters: z.object({}),
+          execute: async () => {
+            return buildCaseSummary(context, currentStatus, currentCallOutcome);
+          },
+        }),
+        updateCaseStatus: llm.tool({
+          description:
+            'Update the debtor case status in the agent working memory. Use this after the user confirms a progression or resolution step.',
+          parameters: z.object({
+            newStatus: z.enum(CASE_STATUSES),
+            reason: z
+              .string()
+              .max(280)
+              .optional()
+              .describe('Short rationale for the status change.'),
+          }),
+          execute: async ({ newStatus, reason }) => {
+            const previousStatus = currentStatus;
+            currentStatus = newStatus;
+            this.context.debtor.caseStatus = newStatus;
+
+            return `Case status updated from ${previousStatus} to ${newStatus}${reason ? ` (reason: ${reason})` : ''}.`;
+          },
+        }),
+        updateCallOutcome: llm.tool({
+          description:
+            'Update the latest call outcome in agent working memory after each conversation outcome is clear.',
+          parameters: z.object({
+            outcome: z.enum(CALL_OUTCOMES),
+            note: z
+              .string()
+              .max(280)
+              .optional()
+              .describe('Optional detail about how the outcome was determined.'),
+          }),
+          execute: async ({ outcome, note }) => {
+            const previousOutcome = currentCallOutcome;
+            currentCallOutcome = outcome;
+            this.context.debtor.callOutcome = outcome;
+
+            return `Call outcome updated from ${previousOutcome} to ${outcome}${note ? ` (note: ${note})` : ''}.`;
+          },
+        }),
+      },
+    });
+
+    this.callStartTime = new Date();
+  }
+
+  async endCall(): Promise<void> {
+    const callEndTime = new Date();
+    await sendTranscriptToAPI(this.context, this.callStartTime, callEndTime);
+  }
+}
+
 function serializeEnrichmentFields(fields: Record<string, string | null>): string {
   const entries = Object.entries(fields);
   if (entries.length === 0) {
@@ -131,63 +254,4 @@ function buildCaseSummary(
     `leverage_score=${debtor.leverageScore}`,
     `enrichment_fields:\n${serializeEnrichmentFields(enrichmentFields)}`,
   ].join('\n');
-}
-
-export class Agent extends voice.Agent {
-  constructor(private readonly context: DebtCollectionContext) {
-    let currentStatus: CaseStatus = context.debtor.caseStatus;
-    let currentCallOutcome: CallOutcome = context.debtor.callOutcome;
-
-    super({
-      instructions: buildInstructions(context),
-      tools: {
-        getCaseSummary: llm.tool({
-          description:
-            'Get a compact snapshot of the current debtor case, including status, outcome, and enrichment fields.',
-          parameters: z.object({}),
-          execute: async () => {
-            return buildCaseSummary(context, currentStatus, currentCallOutcome);
-          },
-        }),
-        updateCaseStatus: llm.tool({
-          description:
-            'Update the debtor case status in the agent working memory. Use this after the user confirms a progression or resolution step.',
-          parameters: z.object({
-            newStatus: z.enum(CASE_STATUSES),
-            reason: z
-              .string()
-              .max(280)
-              .optional()
-              .describe('Short rationale for the status change.'),
-          }),
-          execute: async ({ newStatus, reason }) => {
-            const previousStatus = currentStatus;
-            currentStatus = newStatus;
-            this.context.debtor.caseStatus = newStatus;
-
-            return `Case status updated from ${previousStatus} to ${newStatus}${reason ? ` (reason: ${reason})` : ''}.`;
-          },
-        }),
-        updateCallOutcome: llm.tool({
-          description:
-            'Update the latest call outcome in agent working memory after each conversation outcome is clear.',
-          parameters: z.object({
-            outcome: z.enum(CALL_OUTCOMES),
-            note: z
-              .string()
-              .max(280)
-              .optional()
-              .describe('Optional detail about how the outcome was determined.'),
-          }),
-          execute: async ({ outcome, note }) => {
-            const previousOutcome = currentCallOutcome;
-            currentCallOutcome = outcome;
-            this.context.debtor.callOutcome = outcome;
-
-            return `Call outcome updated from ${previousOutcome} to ${outcome}${note ? ` (note: ${note})` : ''}.`;
-          },
-        }),
-      },
-    });
-  }
 }

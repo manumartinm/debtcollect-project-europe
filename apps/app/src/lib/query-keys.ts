@@ -17,6 +17,13 @@ export const queryKeys = {
     members: (orgId: string) => ["orgs", "members", orgId] as const,
   },
 
+  transcripts: {
+    all: ["transcripts"] as const,
+    list: (orgId: string) => ["transcripts", "list", orgId] as const,
+    detail: (id: string) => ["transcripts", "detail", id] as const,
+    byDebtor: (debtorId: string) => ["transcripts", "byDebtor", debtorId] as const,
+  },
+
   auth: {
     session: ["auth", "session"] as const,
   },

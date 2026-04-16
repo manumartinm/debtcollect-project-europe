@@ -153,6 +153,19 @@ export type ApiMember = {
   user?: { id: string; name: string; email: string; image: string | null }
 }
 
+export type ApiCallTranscript = {
+  id: string
+  debtorId: string
+  orgId: string
+  transcript: string
+  callStartTime: string
+  callEndTime: string
+  durationSeconds: number | null
+  createdAt: string
+  debtor?: ApiDebtor
+  organization?: ApiOrganization
+}
+
 // ---------------------------------------------------------------------------
 // Endpoint functions — Debtors
 // ---------------------------------------------------------------------------
@@ -332,5 +345,23 @@ export const orgsApi = {
         `/api/orgs/${orgId}/members/${memberId}`,
       )
     },
+  },
+}
+
+// ---------------------------------------------------------------------------
+// Endpoint functions — Transcripts
+// ---------------------------------------------------------------------------
+
+export const transcriptsApi = {
+  list(orgId: string) {
+    return api.get<ApiCallTranscript[]>(`/api/transcripts?orgId=${orgId}`)
+  },
+
+  get(id: string) {
+    return api.get<ApiCallTranscript>(`/api/transcripts/${id}`)
+  },
+
+  getByDebtor(debtorId: string) {
+    return api.get<ApiCallTranscript[]>(`/api/transcripts/debtor/${debtorId}`)
   },
 }

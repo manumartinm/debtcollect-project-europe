@@ -177,6 +177,7 @@ export const debtorsRelations = relations(debtors, ({ one, many }) => ({
   }),
   enrichedFields: many(enrichedFields),
   statusEvents: many(statusEvents),
+  callTranscripts: many(callTranscripts),
 }))
 
 // ---------------------------------------------------------------------------
@@ -301,5 +302,43 @@ export const statusEventsRelations = relations(statusEvents, ({ one }) => ({
   debtor: one(debtors, {
     fields: [statusEvents.debtorId],
     references: [debtors.id],
+  }),
+}))
+
+// ---------------------------------------------------------------------------
+// Call transcripts
+// ---------------------------------------------------------------------------
+
+export const callTranscripts = pgTable(
+  'call_transcripts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    debtorId: uuid('debtor_id')
+      .notNull()
+      .references(() => debtors.id, { onDelete: 'cascade' }),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    transcript: text('transcript').notNull(),
+    callStartTime: timestamp('call_start_time', { withTimezone: true }).notNull(),
+    callEndTime: timestamp('call_end_time', { withTimezone: true }).notNull(),
+    durationSeconds: integer('duration_seconds'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('call_transcripts_debtor_idx').on(t.debtorId),
+    index('call_transcripts_org_idx').on(t.orgId),
+    index('call_transcripts_time_idx').on(t.callStartTime),
+  ],
+)
+
+export const callTranscriptsRelations = relations(callTranscripts, ({ one }) => ({
+  debtor: one(debtors, {
+    fields: [callTranscripts.debtorId],
+    references: [debtors.id],
+  }),
+  organization: one(organizations, {
+    fields: [callTranscripts.orgId],
+    references: [organizations.id],
   }),
 }))
