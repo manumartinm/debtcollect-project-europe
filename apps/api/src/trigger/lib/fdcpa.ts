@@ -53,29 +53,51 @@ const SOL_WRITTEN: Record<string, number> = {
   DC: 3,
 }
 
+export type SolComputation = {
+  years: number | null
+  expirationIso: string | null
+  timeBarred: boolean
+}
+
+/** FDCPA-related statute-of-limitations helpers (written contract, by state). */
+export class FdcpaStatuteOfLimitations {
+  yearsForState(state: string): number | null {
+    const s = state.trim().toUpperCase()
+    return SOL_WRITTEN[s] ?? null
+  }
+
+  computeExpiration(
+    dateOfDelinquencyIso: string | undefined,
+    state: string,
+  ): SolComputation {
+    const years = this.yearsForState(state)
+    if (!years || !dateOfDelinquencyIso) {
+      return { years, expirationIso: null, timeBarred: false }
+    }
+    const start = new Date(dateOfDelinquencyIso)
+    if (Number.isNaN(start.getTime())) {
+      return { years, expirationIso: null, timeBarred: false }
+    }
+    const exp = new Date(start)
+    exp.setFullYear(exp.getFullYear() + years)
+    const now = new Date()
+    return {
+      years,
+      expirationIso: exp.toISOString(),
+      timeBarred: now > exp,
+    }
+  }
+}
+
+export const fdcpaStatuteOfLimitations = new FdcpaStatuteOfLimitations()
+
 export function statuteOfLimitationsYears(state: string): number | null {
-  const s = state.trim().toUpperCase()
-  return SOL_WRITTEN[s] ?? null
+  return fdcpaStatuteOfLimitations.yearsForState(state)
 }
 
 export function computeSolExpirationIso(
   dateOfDelinquencyIso: string | undefined,
-  state: string
-): { years: number | null; expirationIso: string | null; timeBarred: boolean } {
-  const years = statuteOfLimitationsYears(state)
-  if (!years || !dateOfDelinquencyIso) {
-    return { years, expirationIso: null, timeBarred: false }
-  }
-  const start = new Date(dateOfDelinquencyIso)
-  if (Number.isNaN(start.getTime())) {
-    return { years, expirationIso: null, timeBarred: false }
-  }
-  const exp = new Date(start)
-  exp.setFullYear(exp.getFullYear() + years)
-  const now = new Date()
-  return {
-    years,
-    expirationIso: exp.toISOString(),
-    timeBarred: now > exp,
-  }
+  state: string,
+): SolComputation {
+  return fdcpaStatuteOfLimitations.computeExpiration(dateOfDelinquencyIso, state)
 }
