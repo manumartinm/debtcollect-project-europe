@@ -11,10 +11,18 @@ import type { EnrichmentStatus } from "@/types/debtor"
 const FIELDS: { api: string; label: string }[] = [
   { api: "phone", label: "Phone" },
   { api: "address", label: "Address" },
+  { api: "email", label: "Email" },
+  { api: "date_of_birth", label: "Date of birth" },
   { api: "employer", label: "Employer" },
   { api: "income_bracket", label: "Income bracket" },
-  { api: "assets", label: "Assets (public sweep)" },
+  { api: "assets", label: "Assets" },
+  { api: "property_ownership", label: "Property ownership" },
+  { api: "bankruptcy_status", label: "Bankruptcy status" },
+  { api: "litigation_history", label: "Litigation history" },
+  { api: "business_affiliations", label: "Business affiliations" },
+  { api: "relatives_associates", label: "Relatives / associates" },
   { api: "social_media_hints", label: "Social / open web" },
+  { api: "tax_id", label: "Tax ID" },
 ]
 
 function fieldValue(debtor: ApiDebtor, api: string): string {

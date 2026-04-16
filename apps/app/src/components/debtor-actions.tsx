@@ -14,9 +14,10 @@ import {
 import { Tooltip, TooltipTrigger } from "@workspace/ui/components/tooltip"
 import { TooltipRich } from "@/components/tooltip-rich"
 import { cn } from "@workspace/ui/lib/utils"
-import { Pencil, Trash2, Wand2 } from "lucide-react"
+import { Pencil, Phone, Trash2, Wand2 } from "lucide-react"
 
 import {
+  useAiCallDebtor,
   useDeleteDebtor,
   useEnrichDebtor,
 } from "@/hooks/use-debtors-queries"
@@ -38,6 +39,8 @@ export type DebtorActionsProps = {
   onEdit?: () => void
   /** Called after successful delete (e.g. navigate away from profile) */
   onDeleted?: () => void
+  /** After enrich starts — subscribe with Trigger.dev Realtime (`useRealtimeRun`). */
+  onEnrichRealtime?: (p: { runId: string; publicAccessToken: string }) => void
 }
 
 export function DebtorActions({
@@ -45,11 +48,17 @@ export function DebtorActions({
   className,
   onEdit,
   onDeleted,
+  onEnrichRealtime,
 }: DebtorActionsProps) {
   const navigate = useNavigate()
   const enrichMutation = useEnrichDebtor()
   const deleteMutation = useDeleteDebtor()
+  const aiCallMutation = useAiCallDebtor()
   const [deleteOpen, setDeleteOpen] = React.useState(false)
+  const [aiCallOpen, setAiCallOpen] = React.useState(false)
+  const [aiCallPhase, setAiCallPhase] = React.useState<
+    "idle" | "dialing" | "in-progress" | "done"
+  >("idle")
 
   const enrichSt = debtor.enrichmentStatus as EnrichmentStatus
   const canEnrich =
@@ -68,12 +77,38 @@ export function DebtorActions({
   const handleEnrich = () => {
     if (!canEnrich) return
     enrichMutation.mutate(debtor.id, {
-      onSuccess: () =>
-        toast.success("Enrichment started — this may take a few minutes."),
+      onSuccess: (data) => {
+        toast.success("Enrichment started — this may take a few minutes.")
+        if (data.runId && data.publicAccessToken) {
+          onEnrichRealtime?.({
+            runId: data.runId,
+            publicAccessToken: data.publicAccessToken,
+          })
+        }
+      },
       onError: (e) =>
         toast.error(
           e instanceof Error ? e.message : "Could not start enrichment"
         ),
+    })
+  }
+
+  const handleAiCall = () => {
+    setAiCallPhase("dialing")
+    aiCallMutation.mutate(debtor.id, {
+      onSuccess: () => {
+        setAiCallPhase("in-progress")
+        setTimeout(() => {
+          setAiCallPhase("done")
+          toast.success("AI agent completed the call successfully.")
+        }, 6000)
+      },
+      onError: (e) => {
+        setAiCallPhase("idle")
+        toast.error(
+          e instanceof Error ? e.message : "Could not start AI call"
+        )
+      },
     })
   }
 
@@ -185,6 +220,26 @@ export function DebtorActions({
           <TooltipTrigger
             type="button"
             className={cn(
+              buttonVariants({ variant: "outline", size: iconSize }),
+              "cursor-pointer shrink-0 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950 dark:hover:text-emerald-300",
+            )}
+            onClick={() => {
+              setAiCallPhase("idle")
+              setAiCallOpen(true)
+            }}
+          >
+            <Phone className={glyph} strokeWidth={1.75} />
+            <span className="sr-only">AI agent call</span>
+          </TooltipTrigger>
+          <TooltipRich side="top" title="AI agent call">
+            Send an AI voice agent to call the debtor on your behalf.
+          </TooltipRich>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger
+            type="button"
+            className={cn(
               buttonVariants({ variant: "ghost", size: iconSize }),
               "cursor-pointer shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive",
             )}
@@ -224,6 +279,92 @@ export function DebtorActions({
             >
               {deleteMutation.isPending ? "Deleting…" : "Delete"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={aiCallOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAiCallOpen(false)
+            setAiCallPhase("idle")
+          }
+        }}
+      >
+        <DialogContent showCloseButton className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {aiCallPhase === "idle" && "Send AI agent call"}
+              {aiCallPhase === "dialing" && "Dialing…"}
+              {aiCallPhase === "in-progress" && "Call in progress"}
+              {aiCallPhase === "done" && "Call completed"}
+            </DialogTitle>
+            <DialogDescription>
+              {aiCallPhase === "idle" && (
+                <>
+                  An AI voice agent will call{" "}
+                  <span className="font-medium text-foreground">
+                    {debtor.debtorName}
+                  </span>{" "}
+                  to discuss case {debtor.caseRef}. The agent will follow your
+                  configured collection strategy.
+                </>
+              )}
+              {aiCallPhase === "dialing" && (
+                <span className="flex items-center gap-2">
+                  <span className="relative flex size-2">
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+                  </span>
+                  Connecting to {debtor.debtorName}…
+                </span>
+              )}
+              {aiCallPhase === "in-progress" && (
+                <span className="flex items-center gap-2">
+                  <span className="relative flex size-2">
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+                  </span>
+                  AI agent is speaking with the debtor. This may take a few minutes.
+                </span>
+              )}
+              {aiCallPhase === "done" &&
+                "The AI agent completed the call. A summary will appear in the call insights section shortly."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            {aiCallPhase === "idle" && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setAiCallOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  className="bg-emerald-600 text-white hover:bg-emerald-700"
+                  onClick={handleAiCall}
+                >
+                  <Phone className="mr-1.5 size-3.5" />
+                  Start call
+                </Button>
+              </>
+            )}
+            {aiCallPhase === "done" && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setAiCallOpen(false)
+                  setAiCallPhase("idle")
+                }}
+              >
+                Close
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -4,6 +4,7 @@ import {
   type ApifyActorClient,
   apifyActorClient,
 } from "../apify.js"
+import { enrichRecapDocketItems } from "../courtlistener.js"
 import { debtorEnrichmentLog } from "../task-logger.js"
 import type { PipelineBranches, WrappedActorBranch } from "./pipeline-types.js"
 import { apifyRunSummary } from "./apify-actor-summary.js"
@@ -94,6 +95,10 @@ export class ApifyActorPipeline {
         propertyTax: apifyRunSummary(propertyTax),
       },
     })
+
+    if (recapDockets.items.length > 0) {
+      recapDockets.items = await enrichRecapDocketItems(recapDockets.items)
+    }
 
     const skipRun = skipTracePrimary
 

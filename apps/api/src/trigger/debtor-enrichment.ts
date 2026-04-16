@@ -9,6 +9,7 @@ import { resolveOpenAiResearchModelId } from "./lib/openai-model.js"
 import { ApifyActorPipeline } from "./lib/debtor-enrichment/apify-actor-pipeline.js"
 import { buildEnrichmentLlmPrompt } from "./lib/debtor-enrichment/enrichment-prompt.js"
 import { persistEnrichmentOutput } from "./lib/debtor-enrichment/persist-enrichment.js"
+import { countPipelineItems } from "./lib/debtor-enrichment/pipeline-types.js"
 import { computeSolExpirationIso } from "./lib/fdcpa.js"
 import { debtorEnrichmentLog } from "./lib/task-logger.js"
 import {
@@ -20,6 +21,17 @@ import {
   type DebtorEnrichmentOutput,
   type DebtorEnrichmentPayload,
 } from "./types.js"
+
+const LLM_SYSTEM_MESSAGE = `You consolidate parallel Apify evidence into structured debtor enrichment for US collections.
+
+CRITICAL RULES — read before responding:
+1. You may ONLY output a field if there is concrete, specific evidence for it in the actor evidence bundle.
+2. If NO evidence exists for a field, you MUST return null for that field. Never guess, infer, or fabricate.
+3. The "baseline identity facts" section is context — do NOT parrot those values back as new discoveries.
+4. If every actor returned zero items, return null for ALL fields. Do not speculate.
+5. Confidence must reflect actual evidence quality: "high" requires multiple corroborating sources; "low" means a single weak signal; "none" means you should not be populating that field at all.
+6. Every non-null field MUST have trace steps that cite real URLs from the evidence. Do not invent URLs.
+7. When in doubt, return null. A missing field is always better than a wrong one.`
 
 /**
  * Orchestrates debtor enrichment: {@link ApifyActorPipeline} → LLM structured output → DB trace + sources.
@@ -73,24 +85,57 @@ export const debtorEnrichmentTask = task({
 
       const tApify = Date.now()
       const branches = await new ApifyActorPipeline(facts).run()
+      const totalItems = countPipelineItems(branches)
       debtorEnrichmentLog.info("Apify pipeline complete", {
         durationMs: Date.now() - tApify,
+        totalItems,
       })
 
+      // ── No evidence → skip LLM, mark complete with "no data" ─────────
+      if (totalItems === 0) {
+        debtorEnrichmentLog.info("No evidence found across all actors — skipping LLM call", {
+          debtorId: debtor.id,
+        })
+
+        await DebtorModel.update(debtor.id, {
+          enrichmentStatus: "complete",
+          enrichmentError: null,
+          enrichmentConfidence: 0,
+        })
+
+        logger.log("debtor-enrichment complete (no data)", {
+          debtorId: debtor.id,
+          caseRef: debtor.caseRef,
+        })
+
+        return {
+          debtorId: debtor.id,
+          caseRef: debtor.caseRef,
+          facts,
+          fdcpa,
+          branches,
+          finalOutput: {} as DebtorEnrichmentOutput,
+          persisted: [],
+          noDataFound: true,
+        }
+      }
+
+      // ── LLM consolidation ────────────────────────────────────────────
       debtorEnrichmentLog.info("LLM: calling generateObject (structured enrichment)", {
         openaiConfigured: Boolean(process.env.OPENAI_API_KEY),
         model: resolveOpenAiResearchModelId(),
+        totalEvidenceItems: totalItems,
       })
       const tLlm = Date.now()
       const llm = await safeGenerateObject({
-        system:
-          "You consolidate parallel Apify evidence into structured debtor enrichment for US collections. Be conservative; only emit supported fields.",
+        system: LLM_SYSTEM_MESSAGE,
         prompt: buildEnrichmentLlmPrompt({ facts, branches, fdcpa }),
         schema: debtorEnrichmentOutputSchema,
         schemaName: "DebtorEnrichment",
       })
       const llmMs = Date.now() - tLlm
 
+      let populatedFieldCount = 0
       if (!llm) {
         debtorEnrichmentLog.warn("LLM returned null — check OPENAI_API_KEY or prior [llm-extract] errors", {
           durationMs: llmMs,
@@ -99,6 +144,7 @@ export const debtorEnrichmentTask = task({
         const fieldKeys = (Object.keys(llm) as (keyof DebtorEnrichmentOutput)[]).filter(
           (k) => llm[k] != null,
         )
+        populatedFieldCount = fieldKeys.length
         debtorEnrichmentLog.info("LLM: structured output received", {
           durationMs: llmMs,
           fieldKeys,
@@ -114,11 +160,22 @@ export const debtorEnrichmentTask = task({
         count: persisted.length,
       })
 
+      const confidence = persisted.length > 0
+        ? Math.min(1, persisted.length / 4)
+        : 0
+
       await DebtorModel.update(debtor.id, {
         enrichmentStatus: "complete",
-        enrichmentError: null,
+        enrichmentError: persisted.length === 0
+          ? "Enrichment ran but found no relevant data for this debtor."
+          : null,
+        enrichmentConfidence: confidence,
       })
-      debtorEnrichmentLog.info("DB: enrichmentStatus -> complete", { debtorId: debtor.id })
+      debtorEnrichmentLog.info("DB: enrichmentStatus -> complete", {
+        debtorId: debtor.id,
+        confidence,
+        fieldsFound: persisted.length,
+      })
 
       logger.log("debtor-enrichment complete", {
         debtorId: debtor.id,
@@ -139,6 +196,7 @@ export const debtorEnrichmentTask = task({
         branches,
         finalOutput,
         persisted,
+        noDataFound: persisted.length === 0,
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)

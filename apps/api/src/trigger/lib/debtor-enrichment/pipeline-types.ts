@@ -32,3 +32,20 @@ export type PipelineBranches = {
 }
 
 export type TraceSourceRow = { name: string; url: string; type: string }
+
+/** Total item count across all branches -- 0 means nothing useful was found. */
+export function countPipelineItems(b: PipelineBranches): number {
+  return (
+    b.social.google.items.length +
+    b.social.instagram.items.length +
+    b.social.linkedin.items.length +
+    b.social.twitter.items.length +
+    b.bankruptcy.items.length +
+    b.skipTrace.items.length +
+    b.courtRecords.items.length +
+    b.recapDockets.items.length +
+    b.businessEntity.items.length +
+    (b.uccNy?.items.length ?? 0) +
+    b.propertyTax.items.length
+  )
+}

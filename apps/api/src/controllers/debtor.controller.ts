@@ -95,7 +95,11 @@ export class DebtorController {
     try {
       const run = await triggerDebtorEnrichment({ debtorId: debtor.id })
       const fresh = await DebtorModel.findById(id)
-      return c.json({ runId: run.id, debtor: fresh })
+      return c.json({
+        runId: run.id,
+        publicAccessToken: run.publicAccessToken,
+        debtor: fresh,
+      })
     } catch (e) {
       const detail = formatEnrichmentFailure(e)
       await DebtorModel.update(id, {
@@ -104,6 +108,21 @@ export class DebtorController {
       })
       return c.json({ error: `Failed to start enrichment: ${detail}` }, 500)
     }
+  }
+
+  /** POST /:id/ai-call — fake AI agent call (demo). */
+  static async startAiCall(c: Context) {
+    const id = paramId(c)
+    const debtor = await DebtorModel.findById(id)
+    if (!debtor) return c.json({ error: 'Not found' }, 404)
+
+    const callId = crypto.randomUUID()
+    return c.json({
+      callId,
+      debtorId: debtor.id,
+      status: 'initiated',
+      message: `AI agent call initiated for ${debtor.debtorName}`,
+    })
   }
 
   /** POST /enrich-batch — start enrichment for many debtors (manual). */

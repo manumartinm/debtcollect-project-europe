@@ -23,6 +23,7 @@ import { StatusTimeline } from "@/components/debtor-profile/status-timeline"
 import type { ApiDebtor, ApiTraceStep } from "@/lib/api"
 import { useSession } from "@/lib/auth-client"
 import { parseDebtAmountString } from "@/lib/debtor-traces"
+import { useDebtorEnrichmentRealtime } from "@/hooks/use-debtor-enrichment-realtime"
 import {
   useDebtor,
   useEnrichedFields,
@@ -65,12 +66,38 @@ export default function DebtorProfilePage() {
   const { data: session } = useSession()
   const author = session?.user?.name ?? "Collector"
 
-  const { data: debtor, isLoading, isError, error } = useDebtor(debtorIdParam)
+  /** Set when POST /enrich returns `runId` + `publicAccessToken` — enables Trigger.dev Realtime instead of polling. */
+  const [enrichmentRealtime, setEnrichmentRealtime] = React.useState<{
+    runId: string
+    publicAccessToken: string
+  } | null>(null)
+
+  const skipRunningPoll = !!(
+    enrichmentRealtime?.runId && enrichmentRealtime.publicAccessToken
+  )
+
+  const { data: debtor, isLoading, isError, error } = useDebtor(debtorIdParam, {
+    skipRunningPoll,
+  })
   const { data: enrichedFieldsByDebtorId } = useEnrichedFields(debtorIdParam, {
-    refetchInterval:
-      debtor?.enrichmentStatus === "running" ? 4000 : false,
+    skipRunningPoll,
   })
   const setStatusMutation = useSetDebtorStatus()
+
+  useDebtorEnrichmentRealtime({
+    debtorId: debtorIdParam,
+    runId: enrichmentRealtime?.runId ?? null,
+    publicAccessToken: enrichmentRealtime?.publicAccessToken ?? null,
+    enabled:
+      !!debtorIdParam &&
+      !!enrichmentRealtime?.runId &&
+      !!enrichmentRealtime?.publicAccessToken,
+    onRunSettled: () => setEnrichmentRealtime(null),
+  })
+
+  React.useEffect(() => {
+    if (debtor?.enrichmentStatus !== "running") setEnrichmentRealtime(null)
+  }, [debtor?.enrichmentStatus])
 
   const [traceSheetStep, setTraceSheetStep] =
     React.useState<ApiTraceStep | null>(null)
@@ -296,6 +323,9 @@ export default function DebtorProfilePage() {
           className="shrink-0 self-start pt-0.5"
           onEdit={() => setEditOpen(true)}
           onDeleted={() => navigate("/debtors")}
+          onEnrichRealtime={({ runId, publicAccessToken }) =>
+            setEnrichmentRealtime({ runId, publicAccessToken })
+          }
         />
       </div>
 

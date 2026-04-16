@@ -197,9 +197,22 @@ export const debtorsApi = {
 
   /** Manual enrichment — starts Trigger.dev research pipeline. */
   enrich(id: string) {
-    return api.post<{ runId: string; debtor: ApiDebtor }>(
-      `/api/debtors/${encodeURIComponent(id)}/enrich`,
-    )
+    return api.post<{
+      runId: string
+      /** Scoped token for [@trigger.dev/react-hooks](https://trigger.dev/docs/realtime/overview) `useRealtimeRun`. */
+      publicAccessToken: string
+      debtor: ApiDebtor
+    }>(`/api/debtors/${encodeURIComponent(id)}/enrich`)
+  },
+
+  /** Start a fake AI agent call for a debtor (demo). */
+  aiCall(id: string) {
+    return api.post<{
+      callId: string
+      debtorId: string
+      status: string
+      message: string
+    }>(`/api/debtors/${encodeURIComponent(id)}/ai-call`)
   },
 
   enrichBatch(debtorIds: string[]) {

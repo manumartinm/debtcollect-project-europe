@@ -29,6 +29,12 @@ export const debtorEnrichmentOutputSchema = z.object({
   income_bracket: enrichmentFieldOutputSchema.nullable(),
   email: enrichmentFieldOutputSchema.nullable(),
   tax_id: enrichmentFieldOutputSchema.nullable(),
+  bankruptcy_status: enrichmentFieldOutputSchema.nullable(),
+  litigation_history: enrichmentFieldOutputSchema.nullable(),
+  property_ownership: enrichmentFieldOutputSchema.nullable(),
+  business_affiliations: enrichmentFieldOutputSchema.nullable(),
+  relatives_associates: enrichmentFieldOutputSchema.nullable(),
+  date_of_birth: enrichmentFieldOutputSchema.nullable(),
 })
 
 export type EnrichmentTraceStep = z.infer<typeof enrichmentTraceStepSchema>

@@ -200,11 +200,18 @@ export class ApifyDatasetSummarizer {
       this.compactRecord(item, [
         "caseName",
         "caseId",
+        "caseNumber",
         "court",
         "dateFiled",
+        "dateTerminated",
+        "natureOfSuit",
+        "cause",
+        "jurisdictionType",
         "partyName",
+        "parties",
         "url",
         "docketNumber",
+        "docketUrl",
         "description",
       ])
     )

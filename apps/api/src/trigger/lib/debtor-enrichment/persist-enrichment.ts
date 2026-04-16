@@ -1,3 +1,4 @@
+import { metadata } from "@trigger.dev/sdk/v3"
 import {
   EnrichedFieldModel,
   type TraceStepInput,
@@ -14,6 +15,12 @@ const fieldKeys = [
   "income_bracket",
   "email",
   "tax_id",
+  "bankruptcy_status",
+  "litigation_history",
+  "property_ownership",
+  "business_affiliations",
+  "relatives_associates",
+  "date_of_birth",
 ] as const satisfies ReadonlyArray<keyof DebtorEnrichmentOutput>
 
 const APIFY_CONSOLE = "https://console.apify.com/actors"
@@ -108,6 +115,11 @@ export class DebtorEnrichmentPersistence {
       }))
       await EnrichedFieldModel.upsert(debtorId, fieldName, value, traceSteps)
       persisted.push({ fieldName, value })
+      // Realtime: frontend `useRealtimeRun` receives metadata updates → refetch enriched fields without polling.
+      metadata.set(
+        "enrichedFieldsReady",
+        persisted.map((p) => p.fieldName),
+      )
     }
     return persisted
   }

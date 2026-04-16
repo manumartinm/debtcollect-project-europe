@@ -123,20 +123,11 @@ export class DebtorApifyQueryBuilder {
 
   recapDocketsInput(): Record<string, unknown> {
     const name = this.facts.fullName.trim()
-    // Actor schema: query + caseName (not partyName). CourtListener API v4 requires auth for docket detail enrichment.
-    const input: Record<string, unknown> = {
+    return {
       query: name,
       caseName: name,
       maxResults: 25,
     }
-    const clToken = process.env.COURTLISTENER_API_TOKEN?.trim()
-    if (clToken) {
-      // Actor pink_comic/recap-federal-court-dockets may read one of these when calling CourtListener v4.
-      input.courtListenerToken = clToken
-      input.courtListenerApiToken = clToken
-      input.token = clToken
-    }
-    return input
   }
 
   businessEntityInput(): Record<string, unknown> {

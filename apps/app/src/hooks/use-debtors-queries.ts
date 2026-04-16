@@ -28,13 +28,18 @@ export function useDebtorsList(orgId: string) {
  * - `staleTime: 0` so list navigation / post-enrichment invalidations surface fresh DB data (default app staleTime is 30s).
  * - Polls every 4s while `enrichmentStatus === "running"` so Trigger.dev completion updates the UI without a manual refresh.
  */
-export function useDebtor(id: string) {
+export function useDebtor(
+  id: string,
+  options?: { skipRunningPoll?: boolean }
+) {
+  const skipPoll = options?.skipRunningPoll ?? false
   return useQuery({
     queryKey: queryKeys.debtors.detail(id),
     queryFn: () => debtorsApi.get(id),
     enabled: !!id,
     staleTime: 0,
     refetchInterval: (query) => {
+      if (skipPoll) return false
       const d = query.state.data as ApiDebtor | undefined
       return d?.enrichmentStatus === "running" ? 4000 : false
     },
@@ -51,14 +56,23 @@ export function useStatusEvents(debtorId: string) {
 
 export function useEnrichedFields(
   debtorId: string,
-  options?: { refetchInterval?: number | false }
+  options?: { refetchInterval?: number | false; skipRunningPoll?: boolean }
 ) {
+  const skipPoll = options?.skipRunningPoll ?? false
+  const qc = useQueryClient()
   return useQuery({
     queryKey: queryKeys.debtors.enrichedFields(debtorId),
     queryFn: () => debtorsApi.getEnrichedFields(debtorId),
     enabled: !!debtorId,
     staleTime: 0,
-    refetchInterval: options?.refetchInterval ?? false,
+    refetchInterval: () => {
+      if (skipPoll) return false
+      if (options?.refetchInterval !== undefined) return options.refetchInterval
+      const detail = qc.getQueryData<ApiDebtor>(
+        queryKeys.debtors.detail(debtorId)
+      )
+      return detail?.enrichmentStatus === "running" ? 4000 : false
+    },
   })
 }
 
@@ -125,6 +139,12 @@ export function useSetDebtorStatus() {
       qc.invalidateQueries({ queryKey: queryKeys.debtors.statusEvents(id) })
       qc.invalidateQueries({ queryKey: queryKeys.debtors.all })
     },
+  })
+}
+
+export function useAiCallDebtor() {
+  return useMutation({
+    mutationFn: (id: string) => debtorsApi.aiCall(id),
   })
 }
 
