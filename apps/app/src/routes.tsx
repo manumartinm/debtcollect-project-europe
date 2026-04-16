@@ -31,8 +31,8 @@ export function AppRoutes() {
               <Route path="upload" element={<UploadPage />} />
               <Route path="debtors" element={<DebtorsPage />} />
               <Route path="debtors/:debtorId" element={<DebtorProfilePage />} />
-              <Route path="calls" element={<CallsPage />} />
               <Route path="calls/:id" element={<CallDetailPage />} />
+              <Route path="calls" element={<CallsPage />} />
               <Route path="voice-agent" element={<VoiceAgentClient />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>

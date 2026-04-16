@@ -1,5 +1,11 @@
 import { Link, useLocation } from "react-router"
-import { FileUp, LayoutDashboard, List, PhoneCall, Settings } from "lucide-react"
+import {
+  ClipboardList,
+  FileUp,
+  LayoutDashboard,
+  List,
+  Settings,
+} from "lucide-react"
 
 import {
   Sidebar,
@@ -14,11 +20,24 @@ import {
   SidebarRail,
 } from "@workspace/ui/components/sidebar"
 
-const items = [
+type SidebarItem = {
+  to: string
+  label: string
+  icon: typeof LayoutDashboard
+  isActive?: (pathname: string) => boolean
+}
+
+const items: SidebarItem[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/upload", label: "Upload", icon: FileUp },
   { to: "/debtors", label: "Debtors", icon: List },
-  { to: "/calls", label: "Calls", icon: PhoneCall },
+  {
+    to: "/calls",
+    label: "Call log",
+    icon: ClipboardList,
+    isActive: (p) =>
+      p === "/calls" || /^\/calls\/[^/]+$/.test(p),
+  },
   { to: "/settings", label: "Settings", icon: Settings },
 ]
 
@@ -49,22 +68,26 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map(({ to, label, icon: Icon }) => (
-                <SidebarMenuItem key={to}>
-                  <SidebarMenuButton
-                    render={<Link to={to} />}
-                    isActive={
-                      to === "/"
-                        ? pathname === "/"
-                        : pathname === to || pathname.startsWith(`${to}/`)
-                    }
-                    tooltip={label}
-                  >
-                    <Icon />
-                    <span>{label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {items.map((item) => {
+                const { to, label, icon: Icon } = item
+                const active = item.isActive
+                  ? item.isActive(pathname)
+                  : to === "/"
+                    ? pathname === "/"
+                    : pathname === to || pathname.startsWith(`${to}/`)
+                return (
+                  <SidebarMenuItem key={to}>
+                    <SidebarMenuButton
+                      render={<Link to={to} />}
+                      isActive={active}
+                      tooltip={label}
+                    >
+                      <Icon />
+                      <span>{label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

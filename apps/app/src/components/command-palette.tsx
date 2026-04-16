@@ -2,6 +2,7 @@ import * as React from "react"
 import { useNavigate } from "react-router"
 import {
   Building2,
+  ClipboardList,
   FileUp,
   LayoutDashboard,
   List,
@@ -63,6 +64,10 @@ export function CommandPalette() {
           <CommandItem onSelect={() => go("/debtors")} className="gap-2">
             <List className="size-4" />
             Debtors
+          </CommandItem>
+          <CommandItem onSelect={() => go("/calls")} className="gap-2">
+            <ClipboardList className="size-4" />
+            Call log
           </CommandItem>
           <CommandItem onSelect={() => go("/settings")} className="gap-2">
             <Settings className="size-4" />

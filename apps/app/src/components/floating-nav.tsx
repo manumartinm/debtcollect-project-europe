@@ -1,12 +1,24 @@
 import { Link, useLocation } from "react-router"
-import { FileUp, LayoutDashboard, List, Settings } from "lucide-react"
+import {
+  ClipboardList,
+  FileUp,
+  LayoutDashboard,
+  List,
+  Settings,
+} from "lucide-react"
 
 import { cn } from "@workspace/ui/lib/utils"
 
 /** Full-height left rail width — keep in sync with layout padding */
 export const FLOATING_NAV_WIDTH_CLASS = "w-56"
 
-type NavItem = { to: string; label: string; icon: typeof LayoutDashboard }
+type NavItem = {
+  to: string
+  label: string
+  icon: typeof LayoutDashboard
+  /** When set, replaces default prefix match for this link */
+  isActive?: (pathname: string) => boolean
+}
 
 type NavSection = {
   title: string
@@ -26,6 +38,18 @@ const sections: readonly NavSection[] = [
     ],
   },
   {
+    title: "Calls",
+    items: [
+      {
+        to: "/calls",
+        label: "Call log",
+        icon: ClipboardList,
+        isActive: (p) =>
+          p === "/calls" || /^\/calls\/[^/]+$/.test(p),
+      },
+    ],
+  },
+  {
     title: "Workspace",
     items: [{ to: "/settings", label: "Settings", icon: Settings }],
   },
@@ -35,6 +59,11 @@ function isActive(pathname: string, to: string) {
   return to === "/"
     ? pathname === "/"
     : pathname === to || pathname.startsWith(`${to}/`)
+}
+
+function linkActive(pathname: string, item: NavItem) {
+  if (item.isActive) return item.isActive(pathname)
+  return isActive(pathname, item.to)
 }
 
 export function FloatingNav() {
@@ -72,8 +101,9 @@ export function FloatingNav() {
                 {section.title}
               </p>
               <ul className="space-y-0.5">
-                {section.items.map(({ to, label, icon: Icon }) => {
-                  const active = isActive(pathname, to)
+                {section.items.map((item) => {
+                  const { to, label, icon: Icon } = item
+                  const active = linkActive(pathname, item)
                   return (
                     <li key={to}>
                       <Link
