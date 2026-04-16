@@ -121,18 +121,21 @@ RULES — FOLLOW EXACTLY:
    - business_affiliations: business entities where debtor is officer, agent, or owner — entity names, roles, states (from business entity + UCC actors)
    - relatives_associates: known relatives or associates — names and relationships (from skip-trace actor)
    - date_of_birth: DOB if found (from skip-trace actor)
-4. Include FDCPA/SOL reasoning inside trace steps where relevant — do NOT invent a new field name.
-5. Each populated field must include a non-empty string value and MULTIPLE trace steps that tell the full reasoning story.
-6. traceSteps is a TIMELINE — each step represents one action the agent took. Build 3-5 steps per field:
-   - Step 1 "search": Which data source was queried and what query was used. agentName = the actor/source name.
-   - Step 2 "analyze": What raw results came back and which items looked relevant. Include specifics (counts, names, dates).
-   - Step 3 "cross-reference" (if applicable): How you verified or combined data across sources. E.g. "Address from skip-trace matches property tax record."
-   - Step 4 "conclude": The final determination — what value was chosen and why, with confidence assessment.
-   - Additional steps if multiple sources contributed or FDCPA/SOL analysis was relevant.
-7. traceSteps fields: stepNumber (sequential from 1), agentName (source actor or "consolidation"), action (verb: "search", "analyze", "cross-reference", "verify", "conclude"), reasoning (1-3 sentences explaining the thought process), finding (the specific data point found, or null), confidence ("high"/"medium"/"low"/"none"), durationMs (estimated ms), sources (array of {name, url, type}).
-8. Source URLs MUST come from the evidence bundle above — use real runUrl, item URLs, or profile URLs. NEVER invent URLs.
-9. The server merges your sources with Apify run dashboard URLs; still cite the most relevant evidence URLs.
-10. confidence levels: "high" = multiple corroborating sources; "medium" = single strong source; "low" = single weak/indirect signal. Do not use "high" for single-source findings.
+4. Include FDCPA/SOL reasoning inside explainability claims where relevant — do NOT invent a new field name.
+5. Each populated field must include a non-empty string "value" and an "explainability" array of 2-5 claims.
+6. Explainability claims are an audit trail shown to the user. Each claim is an evidence-backed assertion:
+   - claim_content: a concise, human-readable paragraph (1-3 sentences) stating the claim and why the evidence supports it.
+     Use inductive format: identify the evidence → explain the linkage → state the field conclusion.
+   - linked_citations: 1+ source URLs that directly support this claim. MUST come from the evidence bundle (runUrl, item URLs, profile URLs). NEVER invent URLs.
+   - confidence: exactly "High", "Medium", or "Low" for this individual claim.
+7. Build claims to tell the reasoning story:
+   - Claim 1: which data sources were searched and what was found (cite actor runUrls).
+   - Claim 2: what specific data points were extracted and how they link to the field (cite item-level URLs if available).
+   - Claim 3 (if applicable): cross-referencing between sources, or FDCPA/SOL analysis.
+   - Final claim: conclusion with confidence assessment.
+8. Every claim must be directly supported by the cited URLs. Do not write unsupported inference.
+9. Quote evidence faithfully and keep it short. Prefer a small number of strong claims over verbose narration.
+10. confidence levels: "High" = multiple corroborating sources; "Medium" = single strong source; "Low" = single weak/indirect signal.
 
 CRITICAL: When in doubt, return null. A missing field is ALWAYS better than a fabricated one.
 `

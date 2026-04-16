@@ -1,156 +1,131 @@
 import {
-  Search,
-  ScanEye,
-  GitCompareArrows,
-  CheckCircle2,
-  CircleDot,
+  FileText,
   ExternalLink,
   ShieldCheck,
   ShieldAlert,
   ShieldQuestion,
-  ShieldX,
+  Quote,
 } from "lucide-react"
 import { cn } from "@workspace/ui/lib/utils"
 
 import type { ApiTraceStep } from "@/lib/api"
 
-const ACTION_META: Record<
-  string,
-  { icon: typeof Search; color: string; label: string }
-> = {
-  search: {
-    icon: Search,
-    color: "text-blue-500 bg-blue-500/10 border-blue-500/20",
-    label: "Search",
-  },
-  analyze: {
-    icon: ScanEye,
-    color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
-    label: "Analyze",
-  },
-  "cross-reference": {
-    icon: GitCompareArrows,
-    color: "text-violet-500 bg-violet-500/10 border-violet-500/20",
-    label: "Cross-reference",
-  },
-  verify: {
-    icon: GitCompareArrows,
-    color: "text-violet-500 bg-violet-500/10 border-violet-500/20",
-    label: "Verify",
-  },
-  conclude: {
-    icon: CheckCircle2,
-    color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
-    label: "Conclude",
-  },
-}
-
-const FALLBACK_META = {
-  icon: CircleDot,
-  color: "text-muted-foreground bg-muted/50 border-border",
-  label: "Step",
-}
-
 const CONFIDENCE_META: Record<
   string,
-  { icon: typeof ShieldCheck; color: string; label: string }
+  { icon: typeof ShieldCheck; color: string; bg: string; label: string }
 > = {
   high: {
     icon: ShieldCheck,
     color: "text-emerald-600 dark:text-emerald-400",
-    label: "High confidence",
+    bg: "bg-emerald-500/10 border-emerald-500/20",
+    label: "High",
   },
   medium: {
     icon: ShieldAlert,
     color: "text-amber-600 dark:text-amber-400",
-    label: "Medium confidence",
+    bg: "bg-amber-500/10 border-amber-500/20",
+    label: "Medium",
   },
   low: {
     icon: ShieldQuestion,
     color: "text-orange-600 dark:text-orange-400",
-    label: "Low confidence",
+    bg: "bg-orange-500/10 border-orange-500/20",
+    label: "Low",
   },
   none: {
-    icon: ShieldX,
+    icon: ShieldQuestion,
     color: "text-muted-foreground",
-    label: "No confidence",
+    bg: "bg-muted/50 border-border",
+    label: "None",
   },
 }
 
-function TimelineNode({
+function prettyCitationLabel(url: string): string {
+  try {
+    const u = new URL(url)
+    const host = u.hostname.replace(/^www\./, "")
+    if (host.includes("apify.com")) return "Apify run"
+    if (host.includes("courtlistener.com")) return "CourtListener"
+    if (host.includes("linkedin.com")) return "LinkedIn"
+    if (host.includes("instagram.com")) return "Instagram"
+    if (host.includes("twitter.com") || host.includes("x.com")) return "X / Twitter"
+    if (host.includes("google.com")) return "Google"
+    return host
+  } catch {
+    return url.slice(0, 30)
+  }
+}
+
+function ClaimCard({
   step,
+  index,
   isLast,
 }: {
   step: ApiTraceStep
+  index: number
   isLast: boolean
 }) {
-  const actionKey = step.action.toLowerCase().replace(/\s+/g, "-")
-  const meta = ACTION_META[actionKey] ?? FALLBACK_META
-  const Icon = meta.icon
-  const conf = CONFIDENCE_META[step.confidence] ?? CONFIDENCE_META.none
+  const claim = step.claimContent ?? step.reasoning
+  const citations = step.linkedCitations?.length
+    ? step.linkedCitations
+    : step.sources.map((s) => s.url)
+  const confKey = (step.claimConfidence || step.confidence || "none").toLowerCase()
+  const conf = CONFIDENCE_META[confKey] ?? CONFIDENCE_META.none
   const ConfIcon = conf.icon
 
   return (
     <div className="relative flex gap-3">
-      {/* Vertical line */}
       {!isLast && (
         <div className="absolute top-8 bottom-0 left-[15px] w-px bg-border" />
       )}
 
-      {/* Icon circle */}
       <div
         className={cn(
           "relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border",
-          meta.color,
+          conf.bg,
+          conf.color,
         )}
       >
-        <Icon className="size-3.5" strokeWidth={2} />
+        <span className="text-xs font-bold">{index + 1}</span>
       </div>
 
-      {/* Content */}
-      <div className="min-w-0 flex-1 space-y-2 pb-6">
+      <div className="min-w-0 flex-1 space-y-2.5 pb-6">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold text-foreground">
-            {meta.label}
-          </span>
-          <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {step.agentName}
-          </span>
-          <div className={cn("flex items-center gap-0.5", conf.color)}>
-            <ConfIcon className="size-3" strokeWidth={2} />
-            <span className="text-[10px] font-medium">{conf.label}</span>
+          <div className={cn("flex items-center gap-1", conf.color)}>
+            <ConfIcon className="size-3.5" strokeWidth={2} />
+            <span className="text-[11px] font-semibold">{conf.label} confidence</span>
           </div>
         </div>
 
-        <p className="text-[13px] leading-relaxed text-foreground">
-          {step.reasoning}
-        </p>
+        <div className="relative rounded-lg border border-border bg-muted/30 px-3.5 py-2.5">
+          <Quote className="absolute top-2 left-2 size-3 text-muted-foreground/30" />
+          <p className="pl-3 text-[13px] leading-relaxed text-foreground">
+            {claim}
+          </p>
+        </div>
 
-        {step.finding && (
-          <div className="rounded-lg border border-border bg-muted/40 px-3 py-2">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Finding
+        {citations.length > 0 && (
+          <div className="space-y-1">
+            <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <FileText className="size-3" />
+              Citations ({citations.length})
             </p>
-            <p className="mt-0.5 text-[13px] text-foreground">
-              {step.finding}
-            </p>
-          </div>
-        )}
-
-        {step.sources.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {step.sources.map((s) => (
-              <a
-                key={s.id}
-                href={s.url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
-              >
-                <ExternalLink className="size-2.5 shrink-0" />
-                <span className="max-w-32 truncate">{s.name}</span>
-              </a>
-            ))}
+            <div className="flex flex-wrap gap-1.5">
+              {citations.map((url, i) => (
+                <a
+                  key={`${url}-${i}`}
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                >
+                  <ExternalLink className="size-2.5 shrink-0" />
+                  <span className="max-w-40 truncate">
+                    {prettyCitationLabel(url)}
+                  </span>
+                </a>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -170,25 +145,27 @@ export function FieldTraceTimeline({
   steps,
 }: FieldTraceTimelineProps) {
   const sorted = [...steps].sort((a, b) => a.stepNumber - b.stepNumber)
+  const hasClaims = sorted.some((s) => s.claimContent || s.linkedCitations?.length)
 
   return (
     <div className="space-y-5">
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
           {fieldLabel}
         </p>
         <p className="text-sm font-medium text-foreground">{fieldValue}</p>
         <p className="text-[11px] text-muted-foreground">
-          {sorted.length} step{sorted.length !== 1 ? "s" : ""} in reasoning
-          chain
+          {sorted.length} evidence claim{sorted.length !== 1 ? "s" : ""}
+          {hasClaims ? " with linked citations" : ""}
         </p>
       </div>
 
       <div>
         {sorted.map((step, i) => (
-          <TimelineNode
+          <ClaimCard
             key={step.id}
             step={step}
+            index={i}
             isLast={i === sorted.length - 1}
           />
         ))}

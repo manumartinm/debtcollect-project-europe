@@ -5,7 +5,7 @@ import type { LanguageModel } from "ai"
 export function resolveOpenAiResearchModelId(): string {
   const raw = process.env.OPENAI_RESEARCH_MODEL
   const t = typeof raw === "string" ? raw.trim() : ""
-  return t || "gpt-4o-mini"
+  return t || "gpt-5.4"
 }
 
 /** Default chat model for enrichment (override with `OPENAI_RESEARCH_MODEL`). */

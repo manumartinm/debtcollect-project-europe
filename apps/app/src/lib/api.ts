@@ -92,6 +92,9 @@ export type ApiTraceStep = {
   reasoning: string
   finding: string | null
   confidence: "high" | "medium" | "low" | "none"
+  claimContent: string | null
+  linkedCitations: string[]
+  claimConfidence: string
   timestamp: string
   durationMs: number
   sources: ApiTraceSource[]
