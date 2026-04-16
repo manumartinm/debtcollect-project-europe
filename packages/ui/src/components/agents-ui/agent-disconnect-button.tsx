@@ -1,7 +1,7 @@
 'use client';
 
 import { type ComponentProps } from 'react';
-import { Button, buttonVariants } from '@workspace/components/ui/button';
+import { Button, buttonVariants } from '@workspace/ui/components/button';
 import { cn } from '@workspace/ui/lib/utils';
 import { useSessionContext } from '@livekit/components-react';
 import { type VariantProps } from 'class-variance-authority';

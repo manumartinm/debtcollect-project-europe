@@ -7,19 +7,19 @@ import { Loader, MessageSquareTextIcon, SendHorizontal } from 'lucide-react';
 import { motion, type MotionProps } from 'motion/react';
 
 import { cn } from '@workspace/ui/lib/utils';
-import { AgentDisconnectButton } from '@workspace/components/agents-ui/agent-disconnect-button';
-import { AgentTrackControl } from '@workspace/components/agents-ui/agent-track-control';
+import { AgentDisconnectButton } from '@workspace/ui/components/agents-ui/agent-disconnect-button';
+import { AgentTrackControl } from '@workspace/ui/components/agents-ui/agent-track-control';
 import {
   AgentTrackToggle,
   agentTrackToggleVariants,
-} from '@workspace/components/agents-ui/agent-track-toggle';
-import { Button } from '@workspace/components/ui/button';
-import { Toggle } from '@workspace/components/ui/toggle';
+} from '@workspace/ui/components/agents-ui/agent-track-toggle';
+import { Button } from '@workspace/ui/components/button';
+import { Toggle } from '@workspace/ui/components/toggle';
 import {
   useInputControls,
   usePublishPermissions,
   type UseInputControlsProps,
-} from '@workspace/hooks/agents-ui/use-agent-control-bar';
+} from '@workspace/ui/hooks/agents-ui/use-agent-control-bar';
 
 const LK_TOGGLE_VARIANT_1 = [
   'data-[state=off]:bg-accent data-[state=off]:hover:bg-foreground/10',
