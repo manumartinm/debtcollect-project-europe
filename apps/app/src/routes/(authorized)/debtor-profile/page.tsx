@@ -20,10 +20,14 @@ import { TraceStepDetail } from "@/components/debtor-profile/trace-step-detail"
 import { FixedFields } from "@/components/debtor-profile/fixed-fields"
 import { LeverageIndicator } from "@/components/debtor-profile/leverage-indicator"
 import { StatusTimeline } from "@/components/debtor-profile/status-timeline"
-import type { ApiTraceStep } from "@/lib/api"
+import type { ApiDebtor, ApiTraceStep } from "@/lib/api"
 import { useSession } from "@/lib/auth-client"
 import { parseDebtAmountString } from "@/lib/debtor-traces"
-import { useDebtor, useSetDebtorStatus } from "@/hooks/use-debtors-queries"
+import {
+  useDebtor,
+  useEnrichedFields,
+  useSetDebtorStatus,
+} from "@/hooks/use-debtors-queries"
 import {
   Sheet,
   SheetContent,
@@ -62,6 +66,10 @@ export default function DebtorProfilePage() {
   const author = session?.user?.name ?? "Collector"
 
   const { data: debtor, isLoading, isError, error } = useDebtor(debtorIdParam)
+  const { data: enrichedFieldsByDebtorId } = useEnrichedFields(debtorIdParam, {
+    refetchInterval:
+      debtor?.enrichmentStatus === "running" ? 4000 : false,
+  })
   const setStatusMutation = useSetDebtorStatus()
 
   const [traceSheetStep, setTraceSheetStep] =
@@ -118,6 +126,16 @@ export default function DebtorProfilePage() {
     return () => window.removeEventListener("keydown", onKey)
   }, [navigate, traceSheetStep])
 
+  /** Prefer `GET /debtors/:id/enriched-fields` when loaded — detail payload can omit nested rows in some cases. Must run before any early return (Rules of Hooks). */
+  const displayDebtor = React.useMemo((): ApiDebtor | null => {
+    if (!debtor) return null
+    const merged =
+      enrichedFieldsByDebtorId !== undefined
+        ? enrichedFieldsByDebtorId
+        : debtor.enrichedFields
+    return { ...debtor, enrichedFields: merged }
+  }, [debtor, enrichedFieldsByDebtorId])
+
   if (isLoading) {
     return (
       <div className="mx-auto w-full max-w-4xl space-y-4 pt-1 text-center text-muted-foreground">
@@ -126,7 +144,7 @@ export default function DebtorProfilePage() {
     )
   }
 
-  if (isError || !debtor) {
+  if (isError || !debtor || !displayDebtor) {
     return (
       <div className="mx-auto w-full max-w-4xl space-y-4 pt-1 text-center">
         <p className="text-muted-foreground">
@@ -144,15 +162,18 @@ export default function DebtorProfilePage() {
     )
   }
 
-  const lev = debtor.leverageScore as LeverageLevel
-  const enrichSt = debtor.enrichmentStatus as EnrichmentStatus
-  const isMinimalProfile = enrichSt === "not_started"
+  const lev = displayDebtor.leverageScore as LeverageLevel
+  const enrichSt = displayDebtor.enrichmentStatus as EnrichmentStatus
+  /** Show tabs (incl. enriched signals) whenever there is stored enrichment data, even if status is still not_started/pending (e.g. import or out-of-sync). */
+  const isMinimalProfile =
+    (enrichSt === "not_started" || enrichSt === "pending") &&
+    displayDebtor.enrichedFields.length === 0
 
   const fieldsColumn = (
     <div className="space-y-6">
-      <FixedFields debtor={debtor} />
-      <DynamicFields debtor={debtor} onOpenTrace={openTraceDetail} />
-      <StatusTimeline debtor={debtor} onStatusChange={handleStatusChange} />
+      <FixedFields debtor={displayDebtor} />
+      <DynamicFields debtor={displayDebtor} onOpenTrace={openTraceDetail} />
+      <StatusTimeline debtor={displayDebtor} onStatusChange={handleStatusChange} />
     </div>
   )
 
@@ -168,7 +189,7 @@ export default function DebtorProfilePage() {
           Not legal advice.
         </p>
         <div className="mt-5">
-          <CallInsights debtor={debtor} />
+          <CallInsights debtor={displayDebtor} />
         </div>
       </div>
     </div>
@@ -201,8 +222,8 @@ export default function DebtorProfilePage() {
 
   const minimalBody = (
     <div className="space-y-6">
-      <FixedFields debtor={debtor} />
-      <StatusTimeline debtor={debtor} onStatusChange={handleStatusChange} />
+      <FixedFields debtor={displayDebtor} />
+      <StatusTimeline debtor={displayDebtor} onStatusChange={handleStatusChange} />
       <p className="text-sm leading-relaxed text-muted-foreground">
         Enrichment is off until you run it. You can still update case status and
         notes above. Start enrichment to load signals, leverage, and call
@@ -226,10 +247,10 @@ export default function DebtorProfilePage() {
             Debtors
           </Link>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            {debtor.debtorName}
+            {displayDebtor.debtorName}
           </h1>
           <p className="font-mono text-xs text-muted-foreground">
-            {debtor.caseRef}
+            {displayDebtor.caseRef}
           </p>
           <dl className="mt-3 grid max-w-full grid-cols-2 gap-x-4 gap-y-2 border-b border-border pb-4 sm:grid-cols-4 lg:flex lg:flex-wrap lg:gap-x-8 lg:gap-y-2">
             <div className="min-w-0">
@@ -237,7 +258,7 @@ export default function DebtorProfilePage() {
                 Debt
               </dt>
               <dd className="mt-0.5 text-sm font-semibold text-foreground tabular-nums">
-                {formatDebtEur(parseDebtAmountString(debtor.debtAmount))}
+                {formatDebtEur(parseDebtAmountString(displayDebtor.debtAmount))}
               </dd>
             </div>
             <div className="min-w-0">
@@ -245,7 +266,7 @@ export default function DebtorProfilePage() {
                 Country
               </dt>
               <dd className="mt-0.5 text-sm font-medium text-foreground">
-                {debtor.country}
+                {displayDebtor.country}
               </dd>
             </div>
             <div className="min-w-0">
@@ -254,7 +275,7 @@ export default function DebtorProfilePage() {
               </dt>
               <dd className="mt-0.5">
                 <Badge variant="secondary" className="text-[11px] font-normal">
-                  {caseStatusLabel(debtor.caseStatus)}
+                  {caseStatusLabel(displayDebtor.caseStatus)}
                 </Badge>
               </dd>
             </div>
@@ -271,7 +292,7 @@ export default function DebtorProfilePage() {
           </dl>
         </div>
         <DebtorActions
-          debtor={debtor}
+          debtor={displayDebtor}
           className="shrink-0 self-start pt-0.5"
           onEdit={() => setEditOpen(true)}
           onDeleted={() => navigate("/debtors")}
@@ -283,7 +304,7 @@ export default function DebtorProfilePage() {
       </div>
 
       <DebtorEditSheet
-        debtor={debtor}
+        debtor={displayDebtor}
         open={editOpen}
         onOpenChange={setEditOpen}
       />

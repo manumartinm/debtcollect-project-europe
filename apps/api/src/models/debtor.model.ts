@@ -78,6 +78,7 @@ export class DebtorModel {
         debtAmount: String(debtAmount),
         callOutcome: callOutcome ?? 'unknown',
         legalOutcome: legalOutcome ?? 'unknown',
+        enrichmentStatus: 'not_started',
       })
       .returning({ id: debtors.id })
 
@@ -111,6 +112,7 @@ export class DebtorModel {
           debtAmount: String(r.debtAmount),
           callOutcome: r.callOutcome ?? 'unknown',
           legalOutcome: r.legalOutcome ?? 'unknown',
+          enrichmentStatus: 'not_started',
         })
         .returning({ id: debtors.id })
 
@@ -144,6 +146,7 @@ export class DebtorModel {
       'legalOutcome',
       'caseStatus',
       'enrichmentStatus',
+      'enrichmentError',
       'enrichmentConfidence',
       'leverageScore',
       'assignedTo',

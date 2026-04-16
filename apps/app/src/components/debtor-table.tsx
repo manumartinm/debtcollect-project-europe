@@ -162,7 +162,8 @@ export function DebtorTable({
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {d.enrichmentStatus === "not_started" ? (
+                  {d.enrichmentStatus === "not_started" ||
+                  d.enrichmentStatus === "pending" ? (
                     <span className="text-xs text-muted-foreground">—</span>
                   ) : (
                     <LeverageBadge score={d.leverageScore as LeverageLevel} />

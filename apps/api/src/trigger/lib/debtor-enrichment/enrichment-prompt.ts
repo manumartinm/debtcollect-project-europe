@@ -1,19 +1,42 @@
 import type { SolComputation } from "../fdcpa.js"
+import { debtorEnrichmentLog } from "../task-logger.js"
 import type { PipelineBranches } from "./pipeline-types.js"
 import { promptEvidenceCompactFormatter } from "./compact-for-prompt.js"
 import type { SubjectFacts } from "./subject-facts.js"
 
+type CompactEvidence = ReturnType<DebtorEnrichmentPromptComposer["buildEvidence"]>
+
+/** Per-branch item counts after compact (for logs). */
+function compactEvidenceStats(evidence: CompactEvidence): {
+  evidenceJsonChars: number
+  itemCounts: Record<string, number | Record<string, number>>
+} {
+  const n = (x: { itemCount?: number }) => x.itemCount ?? 0
+  return {
+    evidenceJsonChars: JSON.stringify(evidence).length,
+    itemCounts: {
+      social: {
+        google: n(evidence.social.google),
+        instagram: n(evidence.social.instagram),
+        linkedin: n(evidence.social.linkedin),
+        twitter: n(evidence.social.twitter),
+      },
+      bankruptcy: n(evidence.bankruptcy),
+      skipTrace: evidence.skipTrace.items?.length ?? 0,
+      courtRecords: n(evidence.courtRecords),
+      recapDockets: n(evidence.recapDockets),
+      businessEntity: n(evidence.businessEntity),
+      uccNy: evidence.uccNy ? n(evidence.uccNy) : 0,
+      propertyTax: n(evidence.propertyTax),
+    },
+  }
+}
+
 /** Builds the consolidation prompt for the final structured-output LLM call. */
 export class DebtorEnrichmentPromptComposer {
-  compose(args: {
-    facts: SubjectFacts
-    branches: PipelineBranches
-    fdcpa: SolComputation
-  }): string {
-    const { facts, branches, fdcpa } = args
+  buildEvidence(branches: PipelineBranches) {
     const c = promptEvidenceCompactFormatter
-
-    const evidence = {
+    return {
       social: {
         google: c.wrappedActor(branches.social.google),
         instagram: c.wrappedActor(branches.social.instagram),
@@ -28,6 +51,24 @@ export class DebtorEnrichmentPromptComposer {
       uccNy: branches.uccNy ? c.wrappedActor(branches.uccNy) : null,
       propertyTax: c.wrappedActor(branches.propertyTax),
     }
+  }
+
+  compose(args: {
+    facts: SubjectFacts
+    branches: PipelineBranches
+    fdcpa: SolComputation
+  }): string {
+    const { facts, branches, fdcpa } = args
+
+    const evidence = this.buildEvidence(branches)
+
+    debtorEnrichmentLog.info("LLM prompt: evidence compact summary", compactEvidenceStats(evidence))
+    const evidenceJson = JSON.stringify(evidence, null, 2)
+    debtorEnrichmentLog.debug("LLM prompt: evidence compact JSON preview", {
+      chars: evidenceJson.length,
+      preview: evidenceJson.slice(0, 4000),
+      truncated: evidenceJson.length > 4000,
+    })
 
     const fdcpaBlock = {
       state: facts.state,

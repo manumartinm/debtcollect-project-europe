@@ -23,11 +23,21 @@ export function useDebtorsList(orgId: string) {
   })
 }
 
+/**
+ * Single-debtor detail (includes `enrichedFields` nested from API).
+ * - `staleTime: 0` so list navigation / post-enrichment invalidations surface fresh DB data (default app staleTime is 30s).
+ * - Polls every 4s while `enrichmentStatus === "running"` so Trigger.dev completion updates the UI without a manual refresh.
+ */
 export function useDebtor(id: string) {
   return useQuery({
     queryKey: queryKeys.debtors.detail(id),
     queryFn: () => debtorsApi.get(id),
     enabled: !!id,
+    staleTime: 0,
+    refetchInterval: (query) => {
+      const d = query.state.data as ApiDebtor | undefined
+      return d?.enrichmentStatus === "running" ? 4000 : false
+    },
   })
 }
 
@@ -39,11 +49,16 @@ export function useStatusEvents(debtorId: string) {
   })
 }
 
-export function useEnrichedFields(debtorId: string) {
+export function useEnrichedFields(
+  debtorId: string,
+  options?: { refetchInterval?: number | false }
+) {
   return useQuery({
     queryKey: queryKeys.debtors.enrichedFields(debtorId),
     queryFn: () => debtorsApi.getEnrichedFields(debtorId),
     enabled: !!debtorId,
+    staleTime: 0,
+    refetchInterval: options?.refetchInterval ?? false,
   })
 }
 
@@ -117,8 +132,12 @@ export function useEnrichDebtor() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => debtorsApi.enrich(id),
-    onSuccess: (_data, id) => {
+    onSuccess: (data, id) => {
+      if (data.debtor) {
+        qc.setQueryData(queryKeys.debtors.detail(id), data.debtor)
+      }
       qc.invalidateQueries({ queryKey: queryKeys.debtors.detail(id) })
+      qc.invalidateQueries({ queryKey: queryKeys.debtors.enrichedFields(id) })
       qc.invalidateQueries({ queryKey: queryKeys.debtors.all })
     },
   })
@@ -128,7 +147,13 @@ export function useEnrichDebtorsBatch() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (debtorIds: string[]) => debtorsApi.enrichBatch(debtorIds),
-    onSuccess: () => {
+    onSuccess: (_data, debtorIds) => {
+      for (const debtorId of debtorIds) {
+        qc.invalidateQueries({ queryKey: queryKeys.debtors.detail(debtorId) })
+        qc.invalidateQueries({
+          queryKey: queryKeys.debtors.enrichedFields(debtorId),
+        })
+      }
       qc.invalidateQueries({ queryKey: queryKeys.debtors.all })
     },
   })

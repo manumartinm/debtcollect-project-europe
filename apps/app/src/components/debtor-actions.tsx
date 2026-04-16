@@ -26,6 +26,11 @@ import type { EnrichmentStatus } from "@/types/debtor"
 const iconSize = "icon-sm" as const
 const glyph = "size-3.5"
 
+function truncateTooltip(s: string, max: number): string {
+  const t = s.replace(/\s+/g, " ").trim()
+  return t.length <= max ? t : `${t.slice(0, max - 1)}…`
+}
+
 export type DebtorActionsProps = {
   debtor: ApiDebtor
   className?: string
@@ -47,7 +52,10 @@ export function DebtorActions({
   const [deleteOpen, setDeleteOpen] = React.useState(false)
 
   const enrichSt = debtor.enrichmentStatus as EnrichmentStatus
-  const canEnrich = enrichSt === "not_started" || enrichSt === "failed"
+  const canEnrich =
+    enrichSt === "not_started" ||
+    enrichSt === "pending" ||
+    enrichSt === "failed"
 
   const handleEdit = () => {
     if (onEdit) {
@@ -89,7 +97,9 @@ export function DebtorActions({
     enrichSt === "failed"
       ? {
           title: "Retry enrichment",
-          body: "Run the research pipeline again after the last run failed.",
+          body: debtor.enrichmentError?.trim()
+            ? `Last error: ${truncateTooltip(debtor.enrichmentError.trim(), 120)}`
+            : "Run the research pipeline again after the last run failed.",
         }
       : canEnrich && !enrichMutation.isPending
         ? {

@@ -1,4 +1,5 @@
 import type { Context } from 'hono'
+import { formatEnrichmentFailure } from '../lib/enrichment-error.js'
 import { triggerDebtorEnrichment } from '../lib/enrich-trigger.js'
 import {
   DebtorModel,
@@ -86,16 +87,22 @@ export class DebtorController {
       return c.json({ error: 'Enrichment already running' }, 409)
     }
 
-    await DebtorModel.update(id, { enrichmentStatus: 'running' })
+    await DebtorModel.update(id, {
+      enrichmentStatus: 'running',
+      enrichmentError: null,
+    })
 
     try {
       const run = await triggerDebtorEnrichment({ debtorId: debtor.id })
       const fresh = await DebtorModel.findById(id)
       return c.json({ runId: run.id, debtor: fresh })
     } catch (e) {
-      await DebtorModel.update(id, { enrichmentStatus: 'failed' })
-      const msg = e instanceof Error ? e.message : String(e)
-      return c.json({ error: `Failed to start enrichment: ${msg}` }, 500)
+      const detail = formatEnrichmentFailure(e)
+      await DebtorModel.update(id, {
+        enrichmentStatus: 'failed',
+        enrichmentError: `Failed to start enrichment: ${detail}`,
+      })
+      return c.json({ error: `Failed to start enrichment: ${detail}` }, 500)
     }
   }
 
@@ -125,14 +132,20 @@ export class DebtorController {
         continue
       }
 
-      await DebtorModel.update(id, { enrichmentStatus: 'running' })
+      await DebtorModel.update(id, {
+        enrichmentStatus: 'running',
+        enrichmentError: null,
+      })
       try {
         await triggerDebtorEnrichment({ debtorId: debtor.id })
         started.push(id)
       } catch (e) {
-        await DebtorModel.update(id, { enrichmentStatus: 'failed' })
-        const msg = e instanceof Error ? e.message : String(e)
-        errors.push({ id, error: msg })
+        const detail = formatEnrichmentFailure(e)
+        await DebtorModel.update(id, {
+          enrichmentStatus: 'failed',
+          enrichmentError: `Failed to start enrichment: ${detail}`,
+        })
+        errors.push({ id, error: detail })
       }
     }
 

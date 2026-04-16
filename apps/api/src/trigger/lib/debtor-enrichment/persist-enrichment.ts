@@ -58,10 +58,7 @@ export class DebtorEnrichmentPersistence {
     push("LinkedIn", branches.social.linkedin.runUrl)
     push("Twitter / X", branches.social.twitter.runUrl)
     push("Bankruptcy filings", branches.bankruptcy.runUrl)
-    push(
-      branches.skipTrace.usedFallback ? "Skip trace (TruePeople fallback)" : "Skip trace",
-      branches.skipTrace.runUrl,
-    )
+    push("Skip trace", branches.skipTrace.runUrl)
     push("Court records", branches.courtRecords.runUrl)
     push("RECAP federal dockets", branches.recapDockets.runUrl)
     push("Business entity", branches.businessEntity.runUrl)

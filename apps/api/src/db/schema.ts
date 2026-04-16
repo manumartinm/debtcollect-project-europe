@@ -138,6 +138,8 @@ export const debtors = pgTable(
     legalOutcome: text('legal_outcome').notNull().default('unknown'),
     caseStatus: text('case_status').notNull().default('new'),
     enrichmentStatus: text('enrichment_status').notNull().default('not_started'),
+    /** Last pipeline failure (API or Trigger task); cleared on new run or success. */
+    enrichmentError: text('enrichment_error'),
     enrichmentConfidence: real('enrichment_confidence'),
     leverageScore: text('leverage_score').notNull().default('none'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

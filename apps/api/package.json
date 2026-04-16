@@ -11,9 +11,9 @@
     "db:studio": "drizzle-kit studio",
     "db:check": "drizzle-kit check",
     "trigger:dev": "trigger.dev dev",
-    "trigger:deploy": "trigger.dev deploy",
-    "trigger:login": "trigger.dev login",
-    "trigger:list": "trigger.dev list"
+    "trigger:deploy": "trigger deploy",
+    "trigger:login": "trigger login",
+    "trigger:list": "trigger list"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.53",

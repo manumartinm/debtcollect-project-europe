@@ -127,6 +127,8 @@ export type ApiDebtor = {
   legalOutcome: string
   caseStatus: string
   enrichmentStatus: string
+  /** Last enrichment failure message; null if never failed or after success. */
+  enrichmentError: string | null
   enrichmentConfidence: number | null
   leverageScore: string
   createdAt: string

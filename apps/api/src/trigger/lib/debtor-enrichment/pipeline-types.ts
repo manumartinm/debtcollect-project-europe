@@ -11,8 +11,6 @@ export type SkipTraceBranch = {
   runId: string
   runUrl: string
   query: string
-  usedFallback: boolean
-  fallbackActorId?: string
   items: Record<string, unknown>[]
 }
 

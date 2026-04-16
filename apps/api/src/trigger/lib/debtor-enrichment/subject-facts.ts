@@ -115,17 +115,28 @@ export class DebtorApifyQueryBuilder {
 
   courtRecordsInput(): Record<string, unknown> {
     return {
-      searchQuery: this.facts.fullName,
+      query: this.facts.fullName,
       mode: "dockets",
       maxResults: 25,
     }
   }
 
   recapDocketsInput(): Record<string, unknown> {
-    return {
-      partyName: this.facts.fullName,
+    const name = this.facts.fullName.trim()
+    // Actor schema: query + caseName (not partyName). CourtListener API v4 requires auth for docket detail enrichment.
+    const input: Record<string, unknown> = {
+      query: name,
+      caseName: name,
       maxResults: 25,
     }
+    const clToken = process.env.COURTLISTENER_API_TOKEN?.trim()
+    if (clToken) {
+      // Actor pink_comic/recap-federal-court-dockets may read one of these when calling CourtListener v4.
+      input.courtListenerToken = clToken
+      input.courtListenerApiToken = clToken
+      input.token = clToken
+    }
+    return input
   }
 
   businessEntityInput(): Record<string, unknown> {
@@ -138,7 +149,7 @@ export class DebtorApifyQueryBuilder {
 
   propertyTaxInput(): Record<string, unknown> {
     return {
-      ownerName: this.facts.fullName,
+      searchQuery: this.facts.fullName,
       state: this.facts.state,
       maxResults: 50,
     }

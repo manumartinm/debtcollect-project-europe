@@ -1,8 +1,9 @@
 import { defineConfig } from "@trigger.dev/sdk";
 
 export default defineConfig({
-  project: "proj_nkatsdgrqaaxxzqwmqoe",
+  project: "proj_cmmfqgbnrcsmfinrucgk",
   runtime: "node",
+  /** `log` = info+ ; `debug` = includes per-step Apify detail. Shown in `pnpm trigger:dev` CLI. */
   logLevel: "log",
   maxDuration: 3600,
   retries: {
