@@ -36,14 +36,6 @@ export function FixedFields({ debtor }: { debtor: ApiDebtor }) {
           <p className="text-xs text-muted-foreground">Name (portfolio)</p>
           <p className="text-sm font-medium">{debtor.debtorName}</p>
         </div>
-        <div className="sm:col-span-2">
-          <p className="text-xs text-muted-foreground">Call outcome (CSV)</p>
-          <p className="text-sm text-foreground">{debtor.callOutcome}</p>
-        </div>
-        <div className="sm:col-span-2">
-          <p className="text-xs text-muted-foreground">Legal outcome (CSV)</p>
-          <p className="text-sm text-foreground">{debtor.legalOutcome}</p>
-        </div>
       </CardContent>
     </Card>
   )

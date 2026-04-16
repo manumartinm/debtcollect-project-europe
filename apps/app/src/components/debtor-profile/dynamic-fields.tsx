@@ -1,6 +1,8 @@
-import { Sparkles } from "lucide-react"
+import { Bot } from "lucide-react"
 
 import { Skeleton } from "@workspace/ui/components/skeleton"
+import { Tooltip, TooltipTrigger } from "@workspace/ui/components/tooltip"
+import { TooltipRich } from "@/components/tooltip-rich"
 import { cn } from "@workspace/ui/lib/utils"
 
 import type { ApiDebtor, ApiTraceStep } from "@/lib/api"
@@ -47,15 +49,21 @@ function EnrichedFieldBlock({
   return (
     <div className="relative rounded-xl border border-border bg-card px-4 py-3 pr-12">
       {trace && onOpenTrace ? (
-        <button
-          type="button"
-          aria-label="Open agent trace for this field"
-          title="Open agent trace"
-          className="absolute top-2 right-2 inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-          onClick={() => onOpenTrace(trace)}
-        >
-          <Sparkles className="size-4" strokeWidth={1.75} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger
+            type="button"
+            aria-label="Open AI agent trace for this field"
+            className="absolute top-2 right-2 inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+            onClick={() => onOpenTrace(trace)}
+          >
+            <Bot className="size-4" strokeWidth={1.75} />
+            <span className="sr-only">Open agent trace</span>
+          </TooltipTrigger>
+          <TooltipRich side="left" title="AI agent trace" className="max-w-[220px]">
+            See how this value was found (steps, reasoning, sources). Not the
+            same as “Run enrichment” on the case.
+          </TooltipRich>
+        </Tooltip>
       ) : null}
       <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
         {label}

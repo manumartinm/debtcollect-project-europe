@@ -16,7 +16,7 @@ import { cn } from "@workspace/ui/lib/utils"
 
 import type { ApiDebtor } from "@/lib/api"
 import type { CaseStatus } from "@/types/debtor"
-import { CASE_STATUS_LABELS } from "@/types/debtor"
+import { CASE_STATUS_LABELS, caseStatusLabel } from "@/types/debtor"
 
 export function StatusTimeline({
   debtor,
@@ -64,7 +64,13 @@ export function StatusTimeline({
                   id="case-status-select"
                   className="h-11 w-full max-w-full bg-background text-[15px] sm:max-w-md"
                 >
-                  <SelectValue />
+                  <SelectValue>
+                    {(v) =>
+                      v == null || v === ""
+                        ? null
+                        : caseStatusLabel(String(v))
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="max-h-[min(60vh,320px)]">
                   {(Object.keys(CASE_STATUS_LABELS) as CaseStatus[]).map((s) => (
@@ -134,7 +140,7 @@ export function StatusTimeline({
                       variant="outline"
                       className="font-normal text-[12px] leading-none"
                     >
-                      {CASE_STATUS_LABELS[e.status as CaseStatus] ?? e.status}
+                      {caseStatusLabel(e.status)}
                     </Badge>
                     {e.note ? (
                       <p className="mt-2.5 wrap-break-word text-[14px] leading-relaxed text-foreground">

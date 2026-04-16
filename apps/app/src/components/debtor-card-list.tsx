@@ -5,12 +5,13 @@ import { Badge } from "@workspace/ui/components/badge"
 import { Card } from "@workspace/ui/components/card"
 import { cn } from "@workspace/ui/lib/utils"
 
+import { DebtorActions } from "@/components/debtor-actions"
 import { LeverageBadge } from "@/components/leverage-badge"
 import type { ApiDebtor } from "@/lib/api"
 import { ENRICHMENT_STATUS_LABEL } from "@/lib/enrichment-labels"
 import { parseDebtAmountString } from "@/lib/debtor-traces"
 import type { CaseStatus, LeverageLevel } from "@/types/debtor"
-import { CASE_STATUS_LABELS } from "@/types/debtor"
+import { caseStatusLabel } from "@/types/debtor"
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en-EU", {
@@ -53,7 +54,8 @@ export function DebtorCardList({
               }
               className={cn(
                 "vexor-fade-up cursor-pointer border-transparent p-4 shadow-[var(--shadow-clay-sm)] ring-1 ring-black/[0.05] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-clay)] active:translate-y-0",
-                isSelected && "ring-2 ring-primary/30 bg-primary/[0.03]"
+                isSelected &&
+                  "bg-muted/50 ring-2 ring-border shadow-sm"
               )}
               onClick={() =>
                 navigate(`/debtors/${encodeURIComponent(d.id)}`)
@@ -72,7 +74,7 @@ export function DebtorCardList({
                   >
                     <input
                       type="checkbox"
-                      className="size-4 cursor-pointer rounded border-input accent-primary"
+                      className="size-4 shrink-0 cursor-pointer rounded border border-input accent-primary"
                       checked={isSelected}
                       onChange={() => selection.onToggle(d.id)}
                       aria-label={`Select ${d.debtorName}`}
@@ -80,20 +82,28 @@ export function DebtorCardList({
                   </div>
                 ) : null}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate font-medium text-foreground">{d.debtorName}</p>
                       <p className="font-mono text-xs text-muted-foreground">
                         {d.caseRef} · {d.country}
                       </p>
                     </div>
-                    <p className="shrink-0 text-sm font-semibold tabular-nums">
-                      {formatMoney(parseDebtAmountString(d.debtAmount))}
-                    </p>
+                    <div className="flex shrink-0 items-start gap-2">
+                      <p className="text-sm font-semibold tabular-nums">
+                        {formatMoney(parseDebtAmountString(d.debtAmount))}
+                      </p>
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      >
+                        <DebtorActions debtor={d} className="gap-0" />
+                      </div>
+                    </div>
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <Badge variant="outline" className="font-normal">
-                      {CASE_STATUS_LABELS[d.caseStatus as CaseStatus]}
+                      {caseStatusLabel(d.caseStatus)}
                     </Badge>
                     <Badge variant="secondary" className="font-normal text-xs">
                       {ENRICHMENT_STATUS_LABEL[

@@ -1,9 +1,9 @@
 import * as React from "react"
-import { Link, useNavigate, useParams } from "react-router"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
 import { Badge } from "@workspace/ui/components/badge"
-import { Button, buttonVariants } from "@workspace/ui/components/button"
+import { buttonVariants } from "@workspace/ui/components/button"
 import {
   Tabs,
   TabsContent,
@@ -12,6 +12,8 @@ import {
 } from "@workspace/ui/components/tabs"
 import { cn } from "@workspace/ui/lib/utils"
 
+import { DebtorActions } from "@/components/debtor-actions"
+import { DebtorEditSheet } from "@/components/debtor-edit-sheet"
 import { CallInsights } from "@/components/debtor-profile/call-insights"
 import { DynamicFields } from "@/components/debtor-profile/dynamic-fields"
 import { TraceStepDetail } from "@/components/debtor-profile/trace-step-detail"
@@ -21,20 +23,16 @@ import { StatusTimeline } from "@/components/debtor-profile/status-timeline"
 import type { ApiTraceStep } from "@/lib/api"
 import { useSession } from "@/lib/auth-client"
 import { parseDebtAmountString } from "@/lib/debtor-traces"
-import {
-  useDebtor,
-  useEnrichDebtor,
-  useSetDebtorStatus,
-} from "@/hooks/use-debtors-queries"
+import { useDebtor, useSetDebtorStatus } from "@/hooks/use-debtors-queries"
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@workspace/ui/components/sheet"
-import { ArrowLeft, Sparkles } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 import type { CaseStatus, EnrichmentStatus, LeverageLevel } from "@/types/debtor"
-import { CASE_STATUS_LABELS } from "@/types/debtor"
+import { caseStatusLabel } from "@/types/debtor"
 
 const ENRICH_LABELS: Record<EnrichmentStatus, string> = {
   not_started: "Not started",
@@ -59,15 +57,29 @@ export default function DebtorProfilePage() {
   const { debtorId: raw } = useParams()
   const debtorIdParam = raw ? decodeURIComponent(raw) : ""
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { data: session } = useSession()
   const author = session?.user?.name ?? "Collector"
 
   const { data: debtor, isLoading, isError, error } = useDebtor(debtorIdParam)
   const setStatusMutation = useSetDebtorStatus()
-  const enrichMutation = useEnrichDebtor()
 
   const [traceSheetStep, setTraceSheetStep] =
     React.useState<ApiTraceStep | null>(null)
+  const [editOpen, setEditOpen] = React.useState(false)
+
+  React.useEffect(() => {
+    if (searchParams.get("edit") !== "1") return
+    setEditOpen(true)
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev)
+        p.delete("edit")
+        return p
+      },
+      { replace: true }
+    )
+  }, [searchParams, setSearchParams])
 
   const openTraceDetail = React.useCallback((step: ApiTraceStep) => {
     setTraceSheetStep(step)
@@ -199,9 +211,6 @@ export default function DebtorProfilePage() {
     </div>
   )
 
-  const canRunEnrich =
-    enrichSt === "not_started" || enrichSt === "failed"
-
   return (
     <div className="mx-auto w-full min-w-0 max-w-4xl space-y-6 pt-1 pb-24 lg:pb-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -245,7 +254,7 @@ export default function DebtorProfilePage() {
               </dt>
               <dd className="mt-0.5">
                 <Badge variant="secondary" className="text-[11px] font-normal">
-                  {CASE_STATUS_LABELS[debtor.caseStatus as CaseStatus]}
+                  {caseStatusLabel(debtor.caseStatus)}
                 </Badge>
               </dd>
             </div>
@@ -261,37 +270,23 @@ export default function DebtorProfilePage() {
             </div>
           </dl>
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {canRunEnrich ? (
-            <Button
-              type="button"
-              size="sm"
-              className="gap-2"
-              disabled={enrichMutation.isPending}
-              onClick={() => {
-                enrichMutation.mutate(debtor.id, {
-                  onSuccess: () =>
-                    toast.success("Enrichment started — this may take a few minutes."),
-                  onError: (e) =>
-                    toast.error(e instanceof Error ? e.message : "Could not start enrichment"),
-                })
-              }}
-            >
-              <Sparkles className="size-4" strokeWidth={1.75} />
-              {enrichSt === "failed" ? "Retry enrichment" : "Run enrichment"}
-            </Button>
-          ) : null}
-          {enrichSt === "running" ? (
-            <span className="text-xs text-muted-foreground">
-              Enrichment in progress…
-            </span>
-          ) : null}
-        </div>
+        <DebtorActions
+          debtor={debtor}
+          className="shrink-0 self-start pt-0.5"
+          onEdit={() => setEditOpen(true)}
+          onDeleted={() => navigate("/debtors")}
+        />
       </div>
 
       <div className="w-full min-w-0">
         {isMinimalProfile ? minimalBody : leadTabs}
       </div>
+
+      <DebtorEditSheet
+        debtor={debtor}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
 
       <Sheet
         open={traceSheetStep !== null}
