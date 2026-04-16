@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router"
-import { FileUp, LayoutDashboard, List, Settings } from "lucide-react"
+import { FileUp, LayoutDashboard, List, PhoneCall, Settings } from "lucide-react"
 
 import {
   Sidebar,
@@ -18,6 +18,7 @@ const items = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/upload", label: "Upload", icon: FileUp },
   { to: "/debtors", label: "Debtors", icon: List },
+  { to: "/calls", label: "Transcripts", icon: PhoneCall },
   { to: "/settings", label: "Settings", icon: Settings },
 ]
 

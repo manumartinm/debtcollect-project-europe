@@ -72,8 +72,6 @@ export default defineAgent({
     proc.userData.vad = await silero.VAD.load();
   },
   entry: async (ctx: JobContext) => {
-    const agent = new Agent(callContext);
-
     const session = new voice.AgentSession({
       stt: new inference.STT({
         model: 'deepgram/nova-3',
@@ -94,7 +92,7 @@ export default defineAgent({
     });
 
     await session.start({
-      agent,
+      agent: new Agent(callContext),
       room: ctx.room,
     });
 
@@ -104,13 +102,6 @@ export default defineAgent({
       instructions:
         'Greet the debtor professionally, confirm identity with care, and offer constructive repayment options.',
     });
-
-    // Handle session end and send transcript
-    try {
-      await session.arun();
-    } finally {
-      await agent.endCall();
-    }
   },
 });
 
