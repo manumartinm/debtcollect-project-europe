@@ -53,7 +53,7 @@ export function AppSidebar() {
           </div>
           <div className="group-data-[collapsible=icon]:hidden">
             <p className="text-[13px] font-semibold leading-tight tracking-tight">
-              Debt Collect
+              DeepCollect
             </p>
             <p className="text-[11px] leading-tight text-muted-foreground">
               Last Human Industry

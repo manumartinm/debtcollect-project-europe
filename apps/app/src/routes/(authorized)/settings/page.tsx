@@ -32,7 +32,7 @@ export default function SettingsPage() {
           <Separator />
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Organization</span>
-            <span className="font-medium">Debt Collect</span>
+            <span className="font-medium">DeepCollect</span>
           </div>
         </CardContent>
       </Card>

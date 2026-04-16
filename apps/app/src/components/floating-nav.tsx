@@ -84,7 +84,7 @@ export function FloatingNav() {
           </div>
           <div className="min-w-0 leading-tight">
             <p className="truncate text-[14px] font-semibold tracking-tight text-foreground">
-              Debt Collect
+              DeepCollect
             </p>
             <p className="truncate text-[11px] text-muted-foreground">
               Debt workspace

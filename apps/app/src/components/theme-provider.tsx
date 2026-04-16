@@ -8,7 +8,7 @@ type ThemeProviderProps = {
 }
 
 /**
- * Debt Collect is light-theme only. Applies `light` on <html> and ignores any stored dark/system preference.
+ * DeepCollect is light-theme only. Applies `light` on <html> and ignores any stored dark/system preference.
  */
 export function ThemeProvider({ children }: ThemeProviderProps) {
   React.useEffect(() => {
