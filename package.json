@@ -7,7 +7,8 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "turbo format",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "voice-agent:deploy": "lk agent deploy --skip-sdk-check --config apps/voice-agent/livekit.toml --secrets-file apps/voice-agent/.env.local"
   },
   "devDependencies": {
     "prettier": "^3.8.1",
