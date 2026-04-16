@@ -16,7 +16,7 @@ import {
   type TrackReferenceOrPlaceholder,
   useMultibandTrackVolume,
 } from '@livekit/components-react';
-import { useAgentAudioVisualizerBarAnimator } from '@workspace/hooks/agents-ui/use-agent-audio-visualizer-bar';
+import { useAgentAudioVisualizerBarAnimator } from '@workspace/ui/hooks/agents-ui/use-agent-audio-visualizer-bar';
 import { cn } from '@workspace/ui/lib/utils';
 
 function cloneSingleChild(
