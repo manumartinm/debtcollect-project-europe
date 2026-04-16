@@ -7,6 +7,7 @@ import {
   integer,
   numeric,
   pgTable,
+  jsonb,
   real,
   text,
   timestamp,
@@ -227,6 +228,9 @@ export const fieldTraceSteps = pgTable(
     reasoning: text('reasoning').notNull(),
     finding: text('finding'),
     confidence: text('confidence').notNull().default('none'),
+    claimContent: text('claim_content'),
+    linkedCitations: jsonb('linked_citations').$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    claimConfidence: text('claim_confidence').notNull().default('none'),
     timestamp: timestamp('timestamp', { withTimezone: true }).notNull().defaultNow(),
     durationMs: integer('duration_ms').notNull().default(0),
   },
@@ -235,6 +239,10 @@ export const fieldTraceSteps = pgTable(
     check(
       'field_trace_steps_confidence_check',
       sql`${t.confidence} IN ('high', 'medium', 'low', 'none')`,
+    ),
+    check(
+      'field_trace_steps_claim_confidence_check',
+      sql`${t.claimConfidence} IN ('high', 'medium', 'low', 'none')`,
     ),
   ],
 )

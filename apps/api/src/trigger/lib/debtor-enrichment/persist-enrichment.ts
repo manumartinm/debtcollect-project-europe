@@ -110,6 +110,9 @@ export class DebtorEnrichmentPersistence {
         reasoning: claim.claim_content,
         finding: claim.claim_content,
         confidence: claim.confidence.toLowerCase() as TraceStepInput["confidence"],
+        claimContent: claim.claim_content,
+        linkedCitations: claim.linked_citations,
+        claimConfidence: claim.confidence.toLowerCase(),
         durationMs: 0,
         sources: this.mergeStepSources(
           claim.linked_citations.map((url) => ({ name: "citation", url, type: "citation" })),

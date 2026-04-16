@@ -222,6 +222,9 @@ export type TraceStepInput = {
   reasoning: string
   finding: string | null
   confidence: string
+  claimContent: string | null
+  linkedCitations: string[]
+  claimConfidence: string
   durationMs: number
   sources?: Array<{ name: string; url: string; type: string }>
 }
@@ -289,6 +292,9 @@ export class EnrichedFieldModel {
               reasoning: step.reasoning,
               finding: step.finding,
               confidence: step.confidence,
+              claimContent: step.claimContent,
+              linkedCitations: step.linkedCitations,
+              claimConfidence: step.claimConfidence,
               durationMs: step.durationMs,
             })
             .returning({ id: fieldTraceSteps.id })

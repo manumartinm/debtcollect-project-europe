@@ -32,7 +32,6 @@ export const debtorEnrichmentOutputSchema = z.object({
   date_of_birth: enrichmentFieldOutputSchema.nullable(),
 })
 
-export type EnrichmentTraceStep = z.infer<typeof enrichmentTraceStepSchema>
 export type ExplainabilityClaim = z.infer<typeof explainabilityClaimSchema>
 export type EnrichmentFieldOutput = z.infer<typeof enrichmentFieldOutputSchema>
 export type DebtorEnrichmentOutput = z.infer<typeof debtorEnrichmentOutputSchema>
