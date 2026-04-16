@@ -13,16 +13,23 @@ export const enrichmentFieldOutputSchema = z.object({
   explainability: z.array(explainabilityClaimSchema).min(1),
 })
 
-/** Maps to `enriched_fields.field_name` check constraint — all keys optional in LLM output. */
+/** Maps to `enriched_fields.field_name` check constraint — all keys nullable in LLM output.
+ * OpenAI structured output requires every property in `required`, so we use `.nullable()` instead of `.optional()`. */
 export const debtorEnrichmentOutputSchema = z.object({
-  phone: enrichmentFieldOutputSchema.optional(),
-  address: enrichmentFieldOutputSchema.optional(),
-  employer: enrichmentFieldOutputSchema.optional(),
-  assets: enrichmentFieldOutputSchema.optional(),
-  social_media_hints: enrichmentFieldOutputSchema.optional(),
-  income_bracket: enrichmentFieldOutputSchema.optional(),
-  email: enrichmentFieldOutputSchema.optional(),
-  tax_id: enrichmentFieldOutputSchema.optional(),
+  phone: enrichmentFieldOutputSchema.nullable(),
+  address: enrichmentFieldOutputSchema.nullable(),
+  employer: enrichmentFieldOutputSchema.nullable(),
+  assets: enrichmentFieldOutputSchema.nullable(),
+  social_media_hints: enrichmentFieldOutputSchema.nullable(),
+  income_bracket: enrichmentFieldOutputSchema.nullable(),
+  email: enrichmentFieldOutputSchema.nullable(),
+  tax_id: enrichmentFieldOutputSchema.nullable(),
+  bankruptcy_status: enrichmentFieldOutputSchema.nullable(),
+  litigation_history: enrichmentFieldOutputSchema.nullable(),
+  property_ownership: enrichmentFieldOutputSchema.nullable(),
+  business_affiliations: enrichmentFieldOutputSchema.nullable(),
+  relatives_associates: enrichmentFieldOutputSchema.nullable(),
+  date_of_birth: enrichmentFieldOutputSchema.nullable(),
 })
 
 export type EnrichmentTraceStep = z.infer<typeof enrichmentTraceStepSchema>

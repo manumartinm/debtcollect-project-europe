@@ -6,8 +6,11 @@ import type { DebtorEnrichmentPayload } from '../trigger/types.js'
  */
 export async function triggerDebtorEnrichment(
   payload: DebtorEnrichmentPayload,
-): Promise<{ id: string }> {
+): Promise<{ id: string; publicAccessToken: string }> {
   const { tasks } = await import('@trigger.dev/sdk/v3')
   const handle = await tasks.trigger('debtor-enrichment', payload)
-  return { id: handle.id }
+  if (!handle.publicAccessToken) {
+    throw new Error('Trigger.dev did not return publicAccessToken for realtime subscription')
+  }
+  return { id: handle.id, publicAccessToken: handle.publicAccessToken }
 }

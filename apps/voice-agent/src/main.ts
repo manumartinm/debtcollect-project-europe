@@ -9,16 +9,13 @@ import {
 } from '@livekit/agents';
 import * as livekit from '@livekit/agents-plugin-livekit';
 import * as silero from '@livekit/agents-plugin-silero';
-import { audioEnhancement } from '@livekit/plugins-ai-coustics';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'node:url';
-import { AGENT_MODEL, Agent } from './agent';
+import { Agent, type DebtCollectionContext } from './agent';
 
-// Load environment variables from a local file.
-// Make sure to set LIVEKIT_URL, LIVEKIT_API_KEY, and LIVEKIT_API_SECRET
-// when running locally or self-hosting your agent server.
 dotenv.config({ path: '.env.local' });
 
+<<<<<<< HEAD
 const requiredEnvVars = ['LIVEKIT_URL', 'LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET'] as const;
 const missingEnvVars = requiredEnvVars.filter((name) => !process.env[name]?.trim());
 
@@ -29,76 +26,87 @@ if (missingEnvVars.length > 0) {
   );
   process.exit(0);
 }
+=======
+const callContext: DebtCollectionContext = {
+  collector: {
+    collectorName: 'Alex Rivera',
+    collectorRole: 'senior_collector',
+    organizationName: 'Atlas Recovery Group',
+    locale: 'en-US',
+    escalationPolicy:
+      'Escalate to legal queue only after repeated non-response or explicit refusal to negotiate.',
+  },
+  debtor: {
+    id: 'debtor-421',
+    orgId: 'org-17',
+    caseRef: 'C-421',
+    assignedTo: 'agent-18',
+    debtorName: 'Jordan Miller',
+    country: 'US',
+    debtAmount: '12.8k',
+    callOutcome: 'unknown',
+    legalOutcome: 'unknown',
+    caseStatus: 'reviewing',
+    enrichmentStatus: 'complete',
+    enrichmentError: null,
+    enrichmentConfidence: 0.8,
+    leverageScore: 'medium',
+    createdAt: '2026-04-02',
+    updatedAt: '2026-04-15',
+  },
+  enrichmentFields: {
+    phone: '202-555-0142',
+    address: '1324 Elm St, Arlington, VA',
+    employer: 'Northline Logistics',
+    assets: 'Vehicle lien on file, no real-estate records',
+    social_media_hints: 'Recently active, likely still employed',
+    income_bracket: '55-75k',
+    email: 'j.miller@examplemail.com',
+    tax_id: null,
+    preferred_contact_window: 'Weekdays 17:00-20:00 local time',
+    hardship_signal: 'Medical bills mentioned in prior conversation',
+  },
+};
+>>>>>>> 37cad1f5f8b932ea098a524e809e7d29f5208bcb
 
 export default defineAgent({
   prewarm: async (proc: JobProcess) => {
     proc.userData.vad = await silero.VAD.load();
   },
   entry: async (ctx: JobContext) => {
-    // Set up a voice AI pipeline using OpenAI, Cartesia, Deepgram, and the LiveKit turn detector
     const session = new voice.AgentSession({
-      // Speech-to-text (STT) is your agent's ears, turning the user's speech into text that the LLM can understand
-      // See all available models at https://docs.livekit.io/agents/models/stt/
       stt: new inference.STT({
         model: 'deepgram/nova-3',
         language: 'multi',
       }),
 
-      // A Large Language Model (LLM) is your agent's brain, processing user input and generating a response
-      // See all providers at https://docs.livekit.io/agents/models/llm/
       llm: new inference.LLM({
-        model: AGENT_MODEL,
+        model: 'openai/gpt-4.1-mini',
       }),
 
-      // Text-to-speech (TTS) is your agent's voice, turning the LLM's text into speech that the user can hear
-      // See all available models as well as voice selections at https://docs.livekit.io/agents/models/tts/
       tts: new inference.TTS({
         model: 'cartesia/sonic-3',
         voice: '9626c31c-bec5-4cca-baa8-f8ba9e84c8bc',
       }),
 
-      // VAD and turn detection are used to determine when the user is speaking and when the agent should respond
-      // See more at https://docs.livekit.io/agents/build/turns
       turnDetection: new livekit.turnDetector.MultilingualModel(),
       vad: ctx.proc.userData.vad! as silero.VAD,
-      voiceOptions: {
-        // Allow the LLM to generate a response while waiting for the end of turn
-        preemptiveGeneration: true,
-      },
     });
 
-    // To use a realtime model instead of a voice pipeline, use the following session setup instead.
-    // (Note: This is for the OpenAI Realtime API. For other providers, see https://docs.livekit.io/agents/models/realtime/))
-    // 1. Install '@livekit/agents-plugin-openai'
-    // 2. Set OPENAI_API_KEY in .env.local
-    // 3. Add import `import * as openai from '@livekit/agents-plugin-openai'` to the top of this file
-    // 4. Use the following session setup instead of the version above
-    // const session = new voice.AgentSession({
-    //   llm: new openai.realtime.RealtimeModel({ voice: 'marin' }),
-    // });
-
-    // Start the session, which initializes the voice pipeline and warms up the models
     await session.start({
-      agent: new Agent(),
+      agent: new Agent(callContext),
       room: ctx.room,
-      inputOptions: {
-        // ai-coustics QUAIL audio enhancement for noise cancellation
-        // Works for both WebRTC and telephony (SIP) participants
-        noiseCancellation: audioEnhancement({ model: 'quailVfL' }),
-      },
     });
 
-    // Join the room and connect to the user
     await ctx.connect();
 
-    // Greet the user on joining
     session.generateReply({
-      instructions: 'Greet the user in a helpful and friendly manner.',
+      instructions:
+        'Greet the debtor professionally, confirm identity with care, and offer constructive repayment options.',
     });
   },
 });
 
-// Run the agent server
 cli.runApp(
   new ServerOptions({
     agent: fileURLToPath(import.meta.url),

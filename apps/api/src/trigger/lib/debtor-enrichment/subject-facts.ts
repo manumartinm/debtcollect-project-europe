@@ -115,15 +115,17 @@ export class DebtorApifyQueryBuilder {
 
   courtRecordsInput(): Record<string, unknown> {
     return {
-      searchQuery: this.facts.fullName,
+      query: this.facts.fullName,
       mode: "dockets",
       maxResults: 25,
     }
   }
 
   recapDocketsInput(): Record<string, unknown> {
+    const name = this.facts.fullName.trim()
     return {
-      partyName: this.facts.fullName,
+      query: name,
+      caseName: name,
       maxResults: 25,
     }
   }
@@ -138,7 +140,7 @@ export class DebtorApifyQueryBuilder {
 
   propertyTaxInput(): Record<string, unknown> {
     return {
-      ownerName: this.facts.fullName,
+      searchQuery: this.facts.fullName,
       state: this.facts.state,
       maxResults: 50,
     }

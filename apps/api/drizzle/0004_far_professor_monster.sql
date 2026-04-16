@@ -1,0 +1,1 @@
+ALTER TABLE "debtors" ADD COLUMN "enrichment_error" text;

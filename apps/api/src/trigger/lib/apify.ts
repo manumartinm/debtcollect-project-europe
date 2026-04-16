@@ -1,5 +1,22 @@
 import { ApifyClient } from "apify-client"
 
+import { debtorEnrichmentLog } from "./task-logger.js"
+
+/** Redact values for logs (Apify actor input may contain API tokens). */
+function sanitizeActorInputForLog(input: Record<string, unknown>): Record<string, unknown> {
+  const sensitive = /^(.*token.*|.*secret.*|.*password.*|.*apikey.*|.*api_key.*|token)$/i
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(input)) {
+    if (sensitive.test(k)) {
+      out[k] =
+        typeof v === "string" && v.length > 0 ? `[redacted:${v.length}chars]` : "[redacted]"
+    } else {
+      out[k] = v
+    }
+  }
+  return out
+}
+
 export type ActorRunResult<T = Record<string, unknown>> = {
   items: T[]
   runUrl: string
@@ -11,7 +28,6 @@ export type ActorRunResult<T = Record<string, unknown>> = {
 export class ApifyActorCatalog {
   static readonly ids = {
     skipTrace: "twoapi/skip-trace",
-    truePeopleSearch: "scrapyspider/truepeoplesearch-contact-finder",
     courtRecords: "automation-lab/court-records-scraper",
     recapDockets: "pink_comic/recap-federal-court-dockets",
     bankruptcy: "pink_comic/bankruptcy-filing-search",
@@ -52,6 +68,10 @@ export class ApifyActorClient {
     const client = this.getClient()
 
     if (!client) {
+      debtorEnrichmentLog.warn("apify: APIFY_API_TOKEN missing — skipping actor run (empty dataset)", {
+        actorId,
+        input: sanitizeActorInputForLog(input),
+      })
       return {
         items: [],
         runUrl: `https://console.apify.com/actors?search=${encodeURIComponent(actorId)}`,
@@ -60,23 +80,46 @@ export class ApifyActorClient {
       }
     }
 
+    debtorEnrichmentLog.info("apify: actor run starting", {
+      actorId,
+      waitSecs,
+      input: sanitizeActorInputForLog(input),
+    })
+
     try {
       const run = await client.actor(actorId).call(input, { waitSecs })
       const runId = run.id
       const runUrl = `${this.dashboardRunBase}/${runId}`
       const datasetId = run.defaultDatasetId
       if (!datasetId) {
+        debtorEnrichmentLog.warn("apify: actor finished with no defaultDatasetId", {
+          actorId,
+          runId,
+          runUrl,
+        })
         return { items: [], runUrl, actorId, runId }
       }
       const { items } = await client.dataset(datasetId).listItems()
+      const list = (items ?? []) as T[]
+      debtorEnrichmentLog.info("apify: actor run ok", {
+        actorId,
+        runId,
+        runUrl,
+        datasetItemCount: list.length,
+      })
       return {
-        items: (items ?? []) as T[],
+        items: list,
         runUrl,
         actorId,
         runId,
       }
     } catch (err) {
-      console.error(`[apify] actor ${actorId} failed`, err)
+      const message = err instanceof Error ? err.message : String(err)
+      debtorEnrichmentLog.error("apify: actor run failed", {
+        actorId,
+        input: sanitizeActorInputForLog(input),
+        error: message,
+      })
       return {
         items: [],
         runUrl: `https://console.apify.com/actors?search=${encodeURIComponent(actorId)}`,

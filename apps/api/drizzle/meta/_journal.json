@@ -29,6 +29,13 @@
       "when": 1776296460352,
       "tag": "0003_bitter_annihilus",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776302753062,
+      "tag": "0004_far_professor_monster",
+      "breakpoints": true
     }
   ]
 }

@@ -110,7 +110,8 @@ export function DebtorCardList({
                         d.enrichmentStatus as keyof typeof ENRICHMENT_STATUS_LABEL
                       ] ?? d.enrichmentStatus}
                     </Badge>
-                    {d.enrichmentStatus === "not_started" ? (
+                    {d.enrichmentStatus === "not_started" ||
+                    d.enrichmentStatus === "pending" ? (
                       <span className="text-xs text-muted-foreground">Leverage —</span>
                     ) : (
                       <LeverageBadge score={d.leverageScore as LeverageLevel} />

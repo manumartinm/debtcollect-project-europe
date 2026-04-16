@@ -19,6 +19,7 @@ debtorsRouter.post('/:id/status', StatusEventController.setStatus)
 debtorsRouter.get('/:id/enriched-fields', EnrichedFieldController.list)
 debtorsRouter.post('/:id/enriched-fields', EnrichedFieldController.upsert)
 debtorsRouter.post('/:id/enrich', DebtorController.startEnrich)
+debtorsRouter.post('/:id/ai-call', DebtorController.startAiCall)
 
 debtorsRouter.get('/:id', DebtorController.getById)
 debtorsRouter.patch('/:id', DebtorController.update)

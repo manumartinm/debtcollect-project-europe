@@ -4,7 +4,10 @@ import {
   type ApifyActorClient,
   apifyActorClient,
 } from "../apify.js"
+import { enrichRecapDocketItems } from "../courtlistener.js"
+import { debtorEnrichmentLog } from "../task-logger.js"
 import type { PipelineBranches, WrappedActorBranch } from "./pipeline-types.js"
+import { apifyRunSummary } from "./apify-actor-summary.js"
 import { ApifyDatasetSummarizer, apifyDatasetSummarizer } from "./summarize-items.js"
 import { DebtorApifyQueryBuilder, type SubjectFacts } from "./subject-facts.js"
 
@@ -21,7 +24,7 @@ function toWrappedBranch(
 }
 
 /**
- * Runs all configured Apify actors for one debtor (parallel wave + skip-trace fallback + optional NY UCC).
+ * Runs all configured Apify actors for one debtor (parallel wave + optional NY UCC).
  */
 export class ApifyActorPipeline {
   private readonly queries: DebtorApifyQueryBuilder
@@ -35,6 +38,12 @@ export class ApifyActorPipeline {
   }
 
   async run(): Promise<PipelineBranches> {
+    const t0 = Date.now()
+    debtorEnrichmentLog.info("Apify pipeline: starting parallel wave (10 actors)", {
+      fullName: this.facts.fullName,
+      state: this.facts.state,
+    })
+
     const googleQuery = this.queries.googleSearchQuery()
     const linkedinQuery = this.queries.linkedInPeopleSearchInput()
     const twitterQuery = this.queries.twitterUserSearchInput()
@@ -53,7 +62,7 @@ export class ApifyActorPipeline {
       propertyTax,
     ] = await Promise.all([
       this.apify.run<Record<string, unknown>>(APIFY_ACTORS.googleSearch, {
-        queries: [googleQuery],
+        queries: googleQuery,
         resultsPerPage: 5,
         maxPagesPerQuery: 1,
       }),
@@ -70,18 +79,47 @@ export class ApifyActorPipeline {
       this.apify.run<Record<string, unknown>>(APIFY_ACTORS.propertyTax, this.queries.propertyTaxInput()),
     ])
 
-    const { skipRun, usedFallback } = await this.resolveSkipTrace(skipTracePrimary)
+    const waveMs = Date.now() - t0
+    debtorEnrichmentLog.info("Apify pipeline: parallel wave finished", {
+      durationMs: waveMs,
+      actors: {
+        googleSearch: apifyRunSummary(google),
+        instagram: apifyRunSummary(instagram),
+        linkedin: apifyRunSummary(linkedin),
+        twitter: apifyRunSummary(twitter),
+        bankruptcy: apifyRunSummary(bankruptcy),
+        skipTrace: apifyRunSummary(skipTracePrimary),
+        courtRecords: apifyRunSummary(courtRecords),
+        recapDockets: apifyRunSummary(recapDockets),
+        businessEntity: apifyRunSummary(businessEntity),
+        propertyTax: apifyRunSummary(propertyTax),
+      },
+    })
 
-    const uccNy =
-      this.facts.state === "NY"
-        ? await this.apify.run<Record<string, unknown>>(APIFY_ACTORS.uccNy, {
-            debtorName: this.facts.fullName,
-            maxResults: 20,
-          })
-        : null
+    if (recapDockets.items.length > 0) {
+      recapDockets.items = await enrichRecapDocketItems(recapDockets.items)
+    }
+
+    const skipRun = skipTracePrimary
+
+    let uccNy: ActorRunResult<Record<string, unknown>> | null = null
+    if (this.facts.state === "NY") {
+      debtorEnrichmentLog.info("Apify pipeline: running NY UCC actor", { state: "NY" })
+      uccNy = await this.apify.run<Record<string, unknown>>(APIFY_ACTORS.uccNy, {
+        debtorName: this.facts.fullName,
+        maxResults: 20,
+      })
+      debtorEnrichmentLog.info("Apify pipeline: NY UCC finished", apifyRunSummary(uccNy))
+    } else {
+      debtorEnrichmentLog.debug("Apify pipeline: skipping UCC (not NY)", { state: this.facts.state })
+    }
 
     const businessItems = [...businessEntity.items, ...(uccNy?.items ?? [])]
     const s = this.summarizer
+
+    debtorEnrichmentLog.info("Apify pipeline: summarizing datasets + building branches", {
+      totalDurationMs: Date.now() - t0,
+    })
 
     return {
       social: {
@@ -107,11 +145,7 @@ export class ApifyActorPipeline {
         actorId: skipRun.actorId,
         runId: skipRun.runId,
         runUrl: skipRun.runUrl,
-        query: usedFallback
-          ? `${this.facts.fullName} (truepeople fallback)`
-          : JSON.stringify(this.queries.skipTraceInput()),
-        usedFallback,
-        fallbackActorId: usedFallback ? APIFY_ACTORS.truePeopleSearch : undefined,
+        query: JSON.stringify(this.queries.skipTraceInput()),
         items: s.summarizeSkipTrace(skipRun.items),
       },
       courtRecords: toWrappedBranch(
@@ -136,19 +170,5 @@ export class ApifyActorPipeline {
         s.summarizeProperty(propertyTax.items),
       ),
     }
-  }
-
-  private async resolveSkipTrace(primary: ActorRunResult<Record<string, unknown>>): Promise<{
-    skipRun: ActorRunResult<Record<string, unknown>>
-    usedFallback: boolean
-  }> {
-    if (primary.items.length > 0) {
-      return { skipRun: primary, usedFallback: false }
-    }
-    const fallback = await this.apify.run<Record<string, unknown>>(APIFY_ACTORS.truePeopleSearch, {
-      name: this.facts.fullName,
-      state: this.facts.state,
-    })
-    return { skipRun: fallback, usedFallback: true }
   }
 }

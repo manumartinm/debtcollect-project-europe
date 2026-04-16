@@ -138,6 +138,8 @@ export const debtors = pgTable(
     legalOutcome: text('legal_outcome').notNull().default('unknown'),
     caseStatus: text('case_status').notNull().default('new'),
     enrichmentStatus: text('enrichment_status').notNull().default('not_started'),
+    /** Last pipeline failure (API or Trigger task); cleared on new run or success. */
+    enrichmentError: text('enrichment_error'),
     enrichmentConfidence: real('enrichment_confidence'),
     leverageScore: text('leverage_score').notNull().default('none'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -195,7 +197,7 @@ export const enrichedFields = pgTable(
     unique('enriched_fields_debtor_field_uniq').on(t.debtorId, t.fieldName),
     check(
       'enriched_fields_name_check',
-      sql`${t.fieldName} IN ('phone', 'address', 'employer', 'assets', 'social_media_hints', 'income_bracket', 'email', 'tax_id')`,
+      sql`${t.fieldName} IN ('phone', 'address', 'employer', 'assets', 'social_media_hints', 'income_bracket', 'email', 'tax_id', 'bankruptcy_status', 'litigation_history', 'property_ownership', 'business_affiliations', 'relatives_associates', 'date_of_birth')`,
     ),
   ],
 )
