@@ -19,6 +19,17 @@ import { AGENT_MODEL, Agent } from './agent';
 // when running locally or self-hosting your agent server.
 dotenv.config({ path: '.env.local' });
 
+const requiredEnvVars = ['LIVEKIT_URL', 'LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET'] as const;
+const missingEnvVars = requiredEnvVars.filter((name) => !process.env[name]?.trim());
+
+if (missingEnvVars.length > 0) {
+  console.warn(
+    `Skipping voice-agent dev startup: missing ${missingEnvVars.join(', ')}. ` +
+      'Set them in apps/voice-agent/.env.local to run the LiveKit worker.',
+  );
+  process.exit(0);
+}
+
 export default defineAgent({
   prewarm: async (proc: JobProcess) => {
     proc.userData.vad = await silero.VAD.load();

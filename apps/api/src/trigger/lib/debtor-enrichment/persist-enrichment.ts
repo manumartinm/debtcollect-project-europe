@@ -99,15 +99,18 @@ export class DebtorEnrichmentPersistence {
       if (!field) continue
       const value = field.value.trim()
       if (!value) continue
-      const traceSteps: TraceStepInput[] = field.traceSteps.map((step) => ({
-        stepNumber: step.stepNumber,
-        agentName: step.agentName,
-        action: step.action,
-        reasoning: step.reasoning,
-        finding: step.finding,
-        confidence: step.confidence,
-        durationMs: step.durationMs,
-        sources: this.mergeStepSources(step.sources, pipelineSources),
+      const traceSteps: TraceStepInput[] = field.explainability.map((claim, index) => ({
+        stepNumber: index + 1,
+        agentName: "Debtor Enrichment LLM",
+        action: "claim",
+        reasoning: claim.claim_content,
+        finding: claim.claim_content,
+        confidence: claim.confidence.toLowerCase() as TraceStepInput["confidence"],
+        durationMs: 0,
+        sources: this.mergeStepSources(
+          claim.linked_citations.map((url) => ({ name: "citation", url, type: "citation" })),
+          pipelineSources,
+        ),
       }))
       await EnrichedFieldModel.upsert(debtorId, fieldName, value, traceSteps)
       persisted.push({ fieldName, value })

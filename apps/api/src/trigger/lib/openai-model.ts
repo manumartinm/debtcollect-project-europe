@@ -3,7 +3,7 @@ import type { LanguageModel } from "ai"
 
 /** Default chat model for enrichment (override with `OPENAI_RESEARCH_MODEL`). */
 export class ResearchOpenAiModel {
-  constructor(private readonly modelId = process.env.OPENAI_RESEARCH_MODEL ?? "gpt-4o-mini") {}
+  constructor(private readonly modelId = process.env.OPENAI_RESEARCH_MODEL ?? "gpt-5.4") {}
 
   get languageModel(): LanguageModel {
     return openai(this.modelId)

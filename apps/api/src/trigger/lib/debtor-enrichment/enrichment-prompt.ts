@@ -58,7 +58,19 @@ Rules:
 - Map social and profile URLs / handles to social_media_hints.
 - Include FDCPA/SOL reasoning inside trace steps where relevant (e.g. time-barred discussion) — do NOT invent a new field name.
 - Each populated field must include a non-empty string value and at least one trace step.
-- traceSteps must include: stepNumber, agentName, action, reasoning, finding, confidence, durationMs, sources (each source: name, url, type; URLs must be http(s)).
+- Explainability (Trace Steps) requirements:
+  - Use explainability as a list of claim objects.
+  - Each claim must have:
+    - claim_content: a concise human-readable paragraph that states the claim and why the evidence supports it
+    - linked_citations: 1+ source URLs that directly support the claim
+    - confidence: exactly one of High, Medium, Low
+  - Follow a readable-prose inductive format: identify the evidence, explain the linkage, then state the field conclusion.
+  - Every claim must be directly supported by the cited URLs.
+  - If you quote evidence in the claim, quote it faithfully and keep it short.
+  - Omit weak or unsupported claims instead of stretching the evidence.
+  - Prefer a small number of strong claims over verbose narration.
+  - When a field is based on multiple actor bundles, make the claim content explicitly connect the evidence to the field.
+  - Do not write chain-of-thought, hidden reasoning, or unsupported inference.
 - The server merges your sources with all Apify actor run dashboard URLs for this job so trace rows always persist in the database; still cite the most relevant URLs in your answer.
 - Be factual and conservative.
 `
