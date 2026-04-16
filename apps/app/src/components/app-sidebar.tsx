@@ -18,7 +18,7 @@ const items = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/upload", label: "Upload", icon: FileUp },
   { to: "/debtors", label: "Debtors", icon: List },
-  { to: "/calls", label: "Transcripts", icon: PhoneCall },
+  { to: "/calls", label: "Calls", icon: PhoneCall },
   { to: "/settings", label: "Settings", icon: Settings },
 ]
 

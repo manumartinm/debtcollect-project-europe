@@ -13,7 +13,8 @@
     "trigger:dev": "trigger.dev dev",
     "trigger:deploy": "trigger deploy",
     "trigger:login": "trigger login",
-    "trigger:list": "trigger list"
+    "trigger:list": "trigger list",
+    "db:seed:transcripts": "tsx ./scripts/seed-transcripts.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.53",
